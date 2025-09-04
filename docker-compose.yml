@@ -1,0 +1,129 @@
+version: "3.9"
+services:
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Kolkata
+      - WEBUI_PORT=8080
+      - DOCKER_MODS=ghcr.io/vuetorrent/vuetorrent-lsio-mod:latest
+      - RCLONE_REMOTE=${RCLONE_REMOTE}
+      - RCLONE_USER=${RCLONE_USER}
+      - RCLONE_PASS=${RCLONE_PASS}
+    volumes:
+      - ${MEDIA_SERVER_ROOT}/configs:/config  # dont add qBittorrent in host folder - qbit automatically creates one
+      - ${DOWNLOADS_FOLDER}:/downloads
+      - ${MEDIA_SERVER_ROOT}/logs:/logs
+      - ${MEDIA_SERVER_ROOT}/scripts:/scripts
+      - ${MEDIA_SERVER_ROOT}/locks:/tmp/locks
+    restart: unless-stopped
+    
+  aria2:
+    image: p3terx/aria2-pro:latest
+    container_name: aria2
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - RPC_SECRET=${RPC_SECRET}
+      - RPC_PORT=6800
+      - RCLONE_REMOTE=${RCLONE_REMOTE}
+      - RCLONE_USER=${RCLONE_USER}
+      - RCLONE_PASS=${RCLONE_PASS}
+      - TZ=Asia/Kolkata
+    volumes:
+      - ${MEDIA_SERVER_ROOT}/configs/aria2:/config
+      - ${DOWNLOADS_FOLDER}:/downloads
+      - ${MEDIA_SERVER_ROOT}/logs:/logs
+      - ${MEDIA_SERVER_ROOT}/scripts:/scripts
+      - ${MEDIA_SERVER_ROOT}/locks:/tmp/locks
+    restart: unless-stopped
+    
+  ariang:
+    image: p3terx/ariang:latest
+    container_name: ariang
+    restart: unless-stopped
+    
+  rclone:
+    image: rclone/rclone:latest
+    container_name: rclone
+    command: > # --log-file /logs/rclone.log --log-level INFO --log-format date,time  (if you need to save in file)
+      rcd --rc-web-gui 
+      --rc-addr :5572 
+      --rc-user ${RCLONE_USER} 
+      --rc-pass ${RCLONE_PASS} 
+      --rc-serve
+    environment:
+      - RCLONE_USER=${RCLONE_USER}
+      - RCLONE_PASS=${RCLONE_PASS}
+    volumes:
+      - ${MEDIA_SERVER_ROOT}/configs/rclone:/config/rclone
+      - ${DOWNLOADS_FOLDER}:/downloads  
+      - ${MEDIA_SERVER_ROOT}/logs:/logs
+    restart: unless-stopped
+
+    
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Kolkata
+      - RCLONE_REMOTE=${RCLONE_REMOTE}
+      - RCLONE_USER=${RCLONE_USER}
+      - RCLONE_PASS=${RCLONE_PASS}
+    volumes:
+      - ${MEDIA_SERVER_ROOT}/configs/radarr:/config
+      - ${DOWNLOADS_FOLDER}:/downloads
+      - ${MEDIA_SERVER_ROOT}/scripts:/scripts
+      - ${MEDIA_SERVER_ROOT}/logs:/logs
+      - ${MEDIA_SERVER_ROOT}/locks:/tmp/locks
+    restart: unless-stopped
+    
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Kolkata
+    volumes:
+      - ${MEDIA_SERVER_ROOT}/configs/prowlarr:/config
+    restart: unless-stopped
+    
+  homarr:
+    container_name: homarr
+    image: ghcr.io/homarr-labs/homarr:latest
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${MEDIA_SERVER_ROOT}/configs/homarr:/appdata
+    environment:
+      - SECRET_ENCRYPTION_KEY=${SECRET_ENCRYPTION_KEY}
+      
+  jellyseerr:
+    image: fallenbagel/jellyseerr:latest
+    container_name: jellyseerr
+    environment:
+      - LOG_LEVEL=debug
+      - TZ=Asia/Tashkent
+      - PORT=5055
+    volumes:
+      - ${MEDIA_SERVER_ROOT}/configs/jellyseer:/app/config
+    restart: unless-stopped
+    
+  profilarr:
+    image: santiagosayshey/profilarr:latest
+    container_name: profilarr
+    volumes:
+      - ${MEDIA_SERVER_ROOT}/configs/profilarr:/config
+    environment:
+      - TZ=Asia/Kolkata
+    restart: unless-stopped
+   
+networks:
+  default:
+    name: ${DOCKER_NETWORK}
+    external: true
