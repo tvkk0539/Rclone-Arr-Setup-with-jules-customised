@@ -103,16 +103,42 @@ This connects your server to your Cloud Storage (Google Drive, etc.).
     ```bash
     mkdir -p configs/rclone
     ```
-2.  Run the interactive setup wizard:
+2.  **Run the Configuration Wizard**:
+    Run this command in your VM terminal (you do not need to be inside a container):
     ```bash
     docker run --rm -it -v $(pwd)/configs/rclone:/config/rclone rclone/rclone config
     ```
-3.  Follow the prompts:
-    *   `n` for **New remote**.
+    *   *What this command does*: It starts a temporary Rclone container. The `-v` part makes sure that the config file you create is saved **on your VM's hard drive** (in `configs/rclone/`), so the other services can find it later.
+
+3.  **Follow the Wizard**:
+    *   Type `n` for **New Remote**.
     *   **name**: Enter the name you put in `.env` (e.g., `drive`).
     *   **Storage**: Choose your provider (e.g., `drive` for Google Drive).
-    *   Follow the specific authentication steps for your provider.
-        *   *Tip for Headless (Server) Setup*: Since your VM has no browser, when it asks "Use auto config?", say **No** (`n`). It will give you a command to run on your *local computer* to authorize access and give you a code to paste back into the terminal.
+    *   **Client ID / Secret**: Leave blank (Press Enter).
+    *   **Scope**: Pick option `1` (Full Access).
+    *   **Root Folder ID**: Leave blank.
+    *   **Service Account**: Leave blank.
+
+4.  **The Tricky Part (Authentication)**:
+    *   It will ask: `Use auto config?`
+    *   **YOU MUST SAY NO (`n`)**.
+    *   *Why?* Because your VM has no browser to open the Google Login page.
+
+5.  **The "Remote" Login**:
+    *   Rclone will show you a long command that looks like: `rclone authorize "drive" "eyJhbGciOi..."`
+    *   **Copy that command.**
+    *   Open a terminal **on your own personal computer** (where you have Rclone installed).
+    *   Paste and run that command.
+    *   A browser window will pop up on your computer. Log in to Google.
+    *   Rclone on your computer will then give you a **Code**.
+    *   **Copy that Code**.
+
+6.  **Finish**:
+    *   Go back to your VM terminal.
+    *   **Paste the Code**.
+    *   Type `q` to quit.
+
+    Now your VM is connected to Google Drive!
 
 ### The Magic of Rclone: Upload vs. Mount
 We use Rclone in two ways in this project:
