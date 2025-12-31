@@ -162,8 +162,54 @@ if ! docker network inspect nginx_network &>/dev/null; then
     echo -e "Created docker network: nginx_network"
 fi
 
-# Run Docker Compose
-docker compose up -d
+# Service Selection Logic
+CORE_SERVICES="rclone rclone-mount homarr"
+OPTIONAL_SERVICES=("radarr" "prowlarr" "qbittorrent" "aria2" "ariang" "jellyseerr" "jellyfin" "profilarr")
+
+echo -e "\n${BLUE}Installation Mode:${NC}"
+echo "1) Full Installation (Install Everything)"
+echo "2) Custom Installation (Select apps to SKIP)"
+read -p "Select option [1]: " INSTALL_MODE
+
+if [ "$INSTALL_MODE" == "2" ]; then
+    echo -e "\n${YELLOW}Custom Installation Selected.${NC}"
+    echo "The following core services will ALWAYS be installed: $CORE_SERVICES"
+    echo -e "\nSelect the apps you do NOT want to install:"
+
+    # List optional services
+    for i in "${!OPTIONAL_SERVICES[@]}"; do
+        echo "$((i+1)). ${OPTIONAL_SERVICES[$i]}"
+    done
+
+    echo -e "\nEnter the numbers of the apps to SKIP (separated by space)."
+    echo "Example: To skip Radarr and Jellyfin, type: 1 7"
+    read -p "Skip apps: " SKIP_INDICES
+
+    # Build list of services to run
+    SERVICES_TO_RUN="$CORE_SERVICES"
+
+    # Loop through all optional services
+    for i in "${!OPTIONAL_SERVICES[@]}"; do
+        SERVICE_NUM=$((i+1))
+        SERVICE_NAME="${OPTIONAL_SERVICES[$i]}"
+
+        # Check if this index was skipped
+        # We add spaces around the list to match whole numbers (e.g. avoid matching '1' inside '10')
+        if [[ " $SKIP_INDICES " =~ " $SERVICE_NUM " ]]; then
+            echo -e "${RED}Skipping $SERVICE_NAME${NC}"
+        else
+            SERVICES_TO_RUN="$SERVICES_TO_RUN $SERVICE_NAME"
+            echo -e "${GREEN}Adding $SERVICE_NAME${NC}"
+        fi
+    done
+
+    echo -e "\nStarting specific services: $SERVICES_TO_RUN"
+    docker compose up -d $SERVICES_TO_RUN
+
+else
+    echo -e "\n${GREEN}Starting ALL services...${NC}"
+    docker compose up -d
+fi
 
 echo -e "\n${GREEN}[7/7] Deployment Complete!${NC}"
 
