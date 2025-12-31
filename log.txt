@@ -1,0 +1,126 @@
+to mount FUSE fs: directory already mounted, use --allow-non-empty to mount anyway: /data/mount
+ rclone-mount  | 2025/12/31 14:32:30 CRITICAL: Fatal error: failed to mount FUSE fs: directory already mounted, use --allow-non-empty to mount anyway: /data/mount
+ rclone-mount  | 2025/12/31 14:33:31 CRITICAL: Fatal error: failed to mount FUSE fs: directory already mounted, use --allow-non-empty to mount anyway: /data/mount
+ jellyfin      | [20:03:59] [INF] [4] MediaBrowser.MediaEncoding.Encoder.MediaEncoder: FFmpeg: /usr/lib/jellyfin-ffmpeg/ffmpeg
+ jellyfin      | [20:03:59] [INF] [4] Emby.Server.Implementations.ApplicationHost: ServerId: 03d43ead98a3465d873f7eb223433ed4
+ jellyfin      | [20:03:59] [INF] [4] Emby.Server.Implementations.ApplicationHost: Core startup complete
+ jellyfin      | [20:03:59] [INF] [4] Main: Startup complete 0:00:36.2130095
+ jellyfin      | [ls.io-init] done.
+ homarr        | 2025-12-31T14:34:07.980Z info: Updated icons in database module="iconsUpdaterJobs" duration="one second" added="0" deleted="0"
+ homarr        | 2025-12-31T14:34:07.981Z warn: The callback of cron job took longer than expected module="cronJobs" name="iconsUpdater" durationInMillis="31825.070086000003" expectedMaximumDurationInMillis="10000"
+ homarr        | 2025-12-31T14:34:08.195Z info: Starting schedule of cron job. module="cronJobs" name="ping"
+ homarr        | 2025-12-31T14:34:08.209Z info: Cleared previous ping urls module="pingJobs"
+ homarr        | 2025-12-31T14:34:08.220Z info: Starting schedule of cron job. module="cronJobs" name="smartHomeEntityState"
+ homarr        | 2025-12-31T14:34:08.228Z info: Starting schedule of cron job. module="cronJobs" name="mediaServer"
+ homarr        | 2025-12-31T14:34:08.235Z info: Starting schedule of cron job. module="cronJobs" name="mediaOrganizer"
+ homarr        | 2025-12-31T14:34:08.242Z info: Starting schedule of cron job. module="cronJobs" name="downloads"
+ homarr        | 2025-12-31T14:34:08.250Z info: Starting schedule of cron job. module="cronJobs" name="dnsHole"
+ homarr        | 2025-12-31T14:34:08.257Z info: Starting schedule of cron job. module="cronJobs" name="mediaRequestStats"
+ homarr        | 2025-12-31T14:34:08.262Z info: Starting schedule of cron job. module="cronJobs" name="mediaRequestList"
+ homarr        | 2025-12-31T14:34:08.268Z info: Starting schedule of cron job. module="cronJobs" name="rssFeeds"
+ homarr        | 2025-12-31T14:34:08.273Z info: Starting schedule of cron job. module="cronJobs" name="indexerManager"
+ homarr        | 2025-12-31T14:34:08.280Z info: Starting schedule of cron job. module="cronJobs" name="healthMonitoring"
+ homarr        | 2025-12-31T14:34:08.284Z info: Starting schedule of cron job. module="cronJobs" name="updateChecker"
+ homarr        | 2025-12-31T14:34:08.663Z info: Starting schedule of cron job. module="cronJobs" name="mediaTranscoding"
+ homarr        | 2025-12-31T14:34:08.670Z info: Starting schedule of cron job. module="cronJobs" name="minecraftServerStatus"
+ homarr        | 2025-12-31T14:34:08.678Z info: Starting schedule of cron job. module="cronJobs" name="dockerContainers"
+ homarr        | 2025-12-31T14:34:08.684Z info: Starting schedule of cron job. module="cronJobs" name="networkController"
+ homarr        | 2025-12-31T14:34:08.691Z info: Starting schedule of cron job. module="cronJobs" name="firewallCpu"
+ homarr        | 2025-12-31T14:34:08.698Z info: Starting schedule of cron job. module="cronJobs" name="firewallMemory"
+ homarr        | 2025-12-31T14:34:08.706Z info: Starting schedule of cron job. module="cronJobs" name="firewallVersion"
+ homarr        | 2025-12-31T14:34:08.714Z info: Starting schedule of cron job. module="cronJobs" name="firewallInterfaces"
+ homarr        | 2025-12-31T14:34:08.721Z info: Starting schedule of cron job. module="cronJobs" name="refreshNotifications"
+ homarr        | 2025-12-31T14:34:08.728Z info: Starting schedule of cron job. module="cronJobs" name="weather"
+ homarr        | 2025-12-31T14:34:08.755Z info: Tasks web server started successfully module="tasksMain" port="3002"
+ radarr        | [Error] CommandExecutor: Error occurred while executing task ProcessMonitoredDownloads
+w Enable Watch   d Detach
+ radarr        | [v6.0.4.10291] code = ReadOnly (8), message = System.Data.SQLite.SQLiteException (0x87AF1779): attempt to write a readonly database
+ radarr        | attempt to write a readonly database
+ radarr        |    at System.Data.SQLite.SQLite3.Step(SQLiteStatement stmt)
+ radarr        |    at System.Data.SQLite.SQLiteDataReader.NextResult()
+ radarr        |    at System.Data.SQLite.SQLiteDataReader..ctor(SQLiteCommand cmd, CommandBehavior behave)
+ radarr        |    at System.Data.SQLite.SQLiteCommand.ExecuteNonQuery(CommandBehavior behavior)
+ radarr        |    at Dapper.SqlMapper.ExecuteCommand(IDbConnection cnn, CommandDefinition& command, Action`2 paramReader) in /_/Dapper/SqlMapper.cs:line 2994
+ radarr        |    at Dapper.SqlMapper.ExecuteImpl(IDbConnection cnn, CommandDefinition& command) in /_/Dapper/SqlMapper.cs:line 685
+ radarr        |    at Dapper.SqlMapper.Execute(IDbConnection cnn, String sql, Object param, IDbTransaction transaction, Nullable`1 commandTimeout, Nullable`1 commandType) in /_/Dapper/SqlMapper.cs:line 556
+ radarr        |    at NzbDrone.Core.Datastore.BasicRepository`1.<>c.<UpdateFields>b__41_0(ValueTuple`4 state, CancellationToken _) in ./NzbDrone.Core/Datastore/BasicRepository.cs:line 410
+ radarr        |    at Polly.ResiliencePipeline.<>c__37`2.<Execute>b__37_0(ResilienceContext context, ValueTuple`2 state)
+ radarr        | --- End of stack trace from previous location ---
+ radarr        |    at Polly.Outcome`1.GetResultOrRethrow()
+ radarr        |    at Polly.ResiliencePipeline.Execute[TResult,TState](Func`3 callback, TState state, CancellationToken cancellationToken)
+ radarr        |    at NzbDrone.Core.Datastore.BasicRepository`1.UpdateFields(IDbConnection connection, IDbTransaction transaction, TModel model, List`1 propertiesToUpdate) in ./NzbDrone.Core/Datastore/BasicRepository.cs:line 406
+ radarr        |    at NzbDrone.Core.Datastore.BasicRepository`1.SetFields(TModel model, Expression`1[] properties) in ./NzbDrone.Core/Datastore/BasicRepository.cs:line 358
+ radarr        |    at NzbDrone.Core.Messaging.Commands.CommandRepository.Start(CommandModel command) in ./NzbDrone.Core/Messaging/Commands/CommandRepository.cs:line 55
+ radarr        |    at NzbDrone.Core.Messaging.Commands.CommandQueueManager.Start(CommandModel command) in ./NzbDrone.Core/Messaging/Commands/CommandQueueManager.cs:line 194
+ radarr        |    at NzbDrone.Core.Messaging.Commands.CommandExecutor.ExecuteCommand[TCommand](TCommand command, CommandModel commandModel) in ./NzbDrone.Core/Messaging/Commands/CommandExecutor.cs:line 73
+ radarr        |    at System.Dynamic.UpdateDelegates.UpdateAndExecuteVoid3[T0,T1,T2](CallSite site, T0 arg0, T1 arg1, T2 arg2)
+ radarr        |    at NzbDrone.Core.Messaging.Commands.CommandExecutor.ExecuteCommands() in ./NzbDrone.Core/Messaging/Commands/CommandExecutor.cs:line 44
+ radarr        |
+ radarr        |
+ profilarr     | 2025-12-31 20:04:16 - apscheduler.scheduler - DEBUG - Looking for jobs to run
+ profilarr     | 2025-12-31 20:04:16 - apscheduler.scheduler - DEBUG - Next wakeup is due at 2025-12-31 20:06:16.040818+05:30 (in 119.997874 seconds)
+ profilarr     | 2025-12-31 20:04:16 - apscheduler.executors.default - INFO - Running job "TaskScheduler._run_task_wrapper.<locals>.wrapped (trigger: interval[0:02:00], next run at: 2025-12-31 20:06:16 IST)" (scheduled at 2025-12-31 20:04:16.040818+05:30)
+ profilarr     | 2025-12-31 20:04:16 - task_system - INFO - Starting task: Repository Sync (ID: 1)
+ profilarr     | 2025-12-31 20:04:16 - task_system - INFO - Task Repository Sync (ID: 1) status changed to: running
+ profilarr     | 2025-12-31 20:04:16 - task_system - ERROR - Task Repository Sync failed after 0.00 seconds: attempt to write a readonly database
+ profilarr     | 2025-12-31 20:04:16 - task_system - INFO - Task Repository Sync (ID: 1) status changed to: failed
+ profilarr     | 2025-12-31 20:04:16 - apscheduler.executors.default - ERROR - Job "TaskScheduler._run_task_wrapper.<locals>.wrapped (trigger: interval[0:02:00], next run at: 2025-12-31 20:06:16 IST)" raised an exception
+ profilarr     | Traceback (most recent call last):
+ profilarr     |   File "/app/app/task/tasks.py", line 84, in wrapped
+ profilarr     |     task.update_status('running')
+ profilarr     |   File "/app/app/task/tasks.py", line 31, in update_status
+ profilarr     |     conn.execute(
+ profilarr     | sqlite3.OperationalError: attempt to write a readonly database
+ profilarr     |
+ profilarr     | During handling of the above exception, another exception occurred:
+ profilarr     |
+ profilarr     | Traceback (most recent call last):
+ profilarr     |   File "/usr/local/lib/python3.9/site-packages/apscheduler/executors/base.py", line 125, in run_job
+ profilarr     |     retval = job.func(*job.args, **job.kwargs)
+ profilarr     |   File "/app/app/task/tasks.py", line 98, in wrapped
+ profilarr     |     task.update_status('failed')
+ profilarr     |   File "/app/app/task/tasks.py", line 31, in update_status
+ profilarr     |     conn.execute(
+ profilarr     | sqlite3.OperationalError: attempt to write a readonly database
+ homarr        | 21:M 31 Dec 2025 14:34:24.058 * 1 changes in 60 seconds. Saving...
+ homarr        | 21:M 31 Dec 2025 14:34:24.061 * Background saving started by pid 59
+ homarr        | 59:C 31 Dec 2025 14:34:24.062 * BGSAVE done, 25 keys saved, 0 keys skipped, 4222 bytes written.
+ homarr        | 59:C 31 Dec 2025 14:34:24.067 * DB saved on disk
+ homarr        | 59:C 31 Dec 2025 14:34:24.068 * Fork CoW for RDB: current 0 MB, peak 0 MB, average 0 MB
+ homarr        | 21:M 31 Dec 2025 14:34:24.161 * Background saving terminated with success
+rclone-mount exited with code 1 (restarting)                                     homarr        | 21:M 31 Dec 2025 14:35:25.074 * 1 changes in 60 seconds. Saving...
+ homarr        | 21:M 31 Dec 2025 14:35:25.074 * Background saving started by pid 60
+ homarr        | 60:C 31 Dec 2025 14:35:25.078 * BGSAVE done, 25 keys saved, 0 keys skipped, 4222 bytes written.
+ homarr        | 60:C 31 Dec 2025 14:35:25.085 * DB saved on disk
+ homarr        | 60:C 31 Dec 2025 14:35:25.088 * Fork CoW for RDB: current 0 MB, peak 0 MB, average 0 MB
+ homarr        | 21:M 31 Dec 2025 14:35:25.175 * Background saving terminated with success
+ rclone-mount  | 2025/12/31 14:35:33 CRITICAL: Fatal error: failed to mount FUSE fs: directory already mounted, use --allow-non-empty to mount anyway: /data/mountEnable Watch   d Detach
+rclone-mount exited with code 1 (restarting)                                     radarr        | [Error] TaskExtensions: Task Error
+ radarr        |
+ radarr        | [v6.0.4.10291] code = ReadOnly (8), message = System.Data.SQLite.SQLiteException (0x87AF1779): attempt to write a readonly database
+ radarr        | attempt to write a readonly database
+ radarr        |    at System.Data.SQLite.SQLite3.Step(SQLiteStatement stmt)
+ radarr        |    at System.Data.SQLite.SQLiteDataReader.NextResult()
+ radarr        |    at System.Data.SQLite.SQLiteDataReader..ctor(SQLiteCommand cmd, CommandBehavior behave)
+ radarr        |    at Dapper.SqlMapper.ExecuteReaderWithFlagsFallback(IDbCommand cmd, Boolean wasClosed, CommandBehavior behavior) in /_/Dapper/SqlMapper.cs:line 1185
+ radarr        |    at Dapper.SqlMapper.QueryMultipleImpl(IDbConnection cnn, CommandDefinition& command) in /_/Dapper/SqlMapper.cs:line 1152
+ radarr        |    at Dapper.SqlMapper.QueryMultiple(IDbConnection cnn, String
+sql, Object param, IDbTransaction transaction, Nullable`1 commandTimeout, Nullable`1 commandType) in /_/Dapper/SqlMapper.cs:line 1128
+ radarr        |    at NzbDrone.Core.Datastore.BasicRepository`1.<>c.<Insert>b__24_0(ValueTuple`4 state, CancellationToken _) in ./NzbDrone.Core/Datastore/BasicRepository.cs:line 214
+ radarr        |    at Polly.ResiliencePipeline.<>c__37`2.<Execute>b__37_0(ResilienceContext context, ValueTuple`2 state)
+ radarr        | --- End of stack trace from previous location ---
+ radarr        |    at Polly.Outcome`1.GetResultOrRethrow()
+ radarr        |    at Polly.ResiliencePipeline.Execute[TResult,TState](Func`3 callback, TState state, CancellationToken cancellationToken)
+ radarr        |    at NzbDrone.Core.Datastore.BasicRepository`1.Insert(IDbConnection connection, IDbTransaction transaction, TModel model) in ./NzbDrone.Core/Datastore/BasicRepository.cs:line 212
+ radarr        |    at NzbDrone.Core.Datastore.BasicRepository`1.Insert(TModel model) in ./NzbDrone.Core/Datastore/BasicRepository.cs:line 170
+ radarr        |    at NzbDrone.Core.Messaging.Commands.CommandQueueManager.Push[TCommand](TCommand command, CommandPriority priority, CommandTrigger trigger) in ./NzbDrone.Core/Messaging/Commands/CommandQueueManager.cs:line 135
+ radarr        |    at NzbDrone.Core.Messaging.Commands.CommandQueueManager.Push(String commandName, Nullable`1 lastExecutionTime, Nullable`1 lastStartTime, CommandPriority priority, CommandTrigger trigger) in ./NzbDrone.Core/Messaging/Commands/CommandQueueManager.cs:line 148
+ radarr        |    at NzbDrone.Core.Jobs.Scheduler.ExecuteCommands() in ./NzbDrone.Core/Jobs/Scheduler.cs:line 42
+ radarr        |    at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+ radarr        | --- End of stack trace from previous location ---
+ radarr        |    at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, Object state)
+ radarr        |    at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task&
+currentTaskSlot, Thread threadPoolThread)
+ radarr        |
+ radarr        |
+w Enable Watch   d Detach
