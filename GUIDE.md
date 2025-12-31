@@ -9,7 +9,7 @@ This project allows you to run a complete "Netflix-like" media server on a cloud
 2.  **Radarr**: It sees the request and finds the movie on torrent sites (via Prowlarr).
 3.  **qBittorrent**: Downloads the movie.
 4.  **Automation Scripts**: As soon as the download finishes, a special script **moves the file to your Cloud Storage** (Google Drive, OneDrive, etc.) using **Rclone**.
-5.  **Result**: You have a huge media library stored in the cloud.
+5.  **Result**: You have a huge media library stored in the cloud, but managed automatically by your server.
 
 ---
 
@@ -215,7 +215,48 @@ Now open your browser and go to your VM's External IP address with the ports.
     *   qBittorrent downloads it to your VM.
     *   **Once finished**: The `radarr_manage.sh` script triggers.
     *   The script tells Rclone to move the file to your Google Drive `Movies` folder.
-    *   The file is deleted from your VM.
+    *   The file is deleted from your VM to save space.
     *   **Watching**: Open Jellyfin, scan your library, and the movie will appear, streaming directly from the cloud!
+
+---
+
+## 9. Deep Dive: Understanding the Components
+
+You might be wondering: "Why do we need so many services? What are they all doing?"
+
+### A. Rclone: The "Uploader" vs. The "Virtual Drive"
+
+Rclone is the most important tool here, and it does two very different jobs:
+
+**1. The Uploader (Space Saver)**
+*   **What it does:** When a movie finishes downloading, our scripts tell Rclone: *"Take this file and send it to Google Drive/OneDrive."*
+*   **Why it's important:** This is why your VM (which only has 30GB-50GB space) never runs out of space, even if you have 1000 movies.
+*   **How it works:** It uses the Rclone API to upload files in the background.
+
+**2. The Virtual Drive (The "Mount")**
+*   **The Problem:** Normally, if you want to watch a movie stored on Google Drive, you have to download it first.
+*   **The Solution:** We use Rclone to "Mount" your Google Drive. This tricks your computer (and Jellyfin) into thinking Google Drive is just a regular **folder** on your hard drive.
+*   **Why it's cool:** You can point Jellyfin to this "Folder", and it will play the movie **directly from the cloud** instantly, without downloading the whole thing again.
+
+### B. Jellyseerr vs. Jellyfin
+
+Many people get these confused. Here is the difference:
+
+**1. Jellyseerr (The "Menu")**
+*   **What it is:** A beautiful catalog of all movies and TV shows in existence (like the Netflix home screen).
+*   **Purpose:** You use it to **find** things you want to watch. When you see a movie you like, you click a **"Request"** button.
+*   **Analogy:** It is like the **Waiter** who takes your order at a restaurant.
+*   *Note: You cannot watch movies on Jellyseerr.*
+
+**2. Jellyfin (The "TV Screen")**
+*   **What it is:** A media player/server (similar to Plex).
+*   **Purpose:** It takes the video file that is stored in your cloud (via the Rclone Mount) and plays it on your browser, TV, or phone.
+*   **Analogy:** It is like the **TV Screen** where you actually watch the show.
+
+**So, the full flow is:**
+1.  **You** tell the **Waiter (Jellyseerr)** what you want.
+2.  The **Kitchen (Radarr/qBittorrent)** cooks it (downloads it).
+3.  The **Delivery Guy (Rclone Uploader)** puts it in the **Freezer (Cloud Storage)**.
+4.  When you want to eat, the **Magic Bridge (Rclone Mount)** brings it to your **TV (Jellyfin)** instantly!
 
 Enjoy your automated cloud media server!
