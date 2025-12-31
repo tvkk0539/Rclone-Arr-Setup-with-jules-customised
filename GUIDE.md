@@ -192,14 +192,33 @@ Example: `http://<YOUR_VM_IP>:7575` (Homarr Dashboard).
 6.  Click **Save**.
 
 ### Step D: Configure Jellyfin (The Streamer)
-1.  Go to `http://<YOUR_VM_IP>:8096`.
-2.  Follow the setup wizard.
-3.  **Add Media Library**:
-    *   Content type: **Movies**.
-    *   Folders: Click **+** and navigate to `/data/movies`.
-        *   *Note: If you don't see your cloud files yet, make sure you actually have files in your cloud storage!*
-    *   Finish the setup.
-4.  Now you can login and watch movies!
+
+*Note: The code installed Jellyfin for you, but you must do the initial "Welcome" setup yourself.*
+
+1.  **Open the Web Interface**:
+    *   Go to `http://<YOUR_VM_IP>:8096` in your browser.
+2.  **The Setup Wizard**:
+    *   **Language**: Select your preferred language and click **Next**.
+    *   **User Account**: Create a username and password (e.g., `admin`). You will use this to log in later.
+3.  **Add Media Library** (The Important Part):
+    *   It will ask to "Setup your media libraries". Click **+ Add Media Library**.
+    *   **Content type**: Select **Movies**.
+    *   **Display Name**: Type `Movies` (or whatever you like).
+    *   **Folders**: Click the **+ (Plus)** button next to "Folders".
+    *   **Select the Path**:
+        *   You will see a list of folders. Click on `/` (Root).
+        *   Scroll down and click on `data`.
+        *   Click on `movies`.
+        *   *Why this folder?* This is where our `rclone-mount` container is "projecting" your Google Drive files.
+        *   Click **OK** once you are in `/data/movies`.
+    *   Click **OK** again to save the library.
+4.  **Finish Setup**:
+    *   **Metadata Language**: Choose your language (English).
+    *   **Remote Access**: Leave "Allow remote connections" **Checked** (Important!).
+    *   Click **Finish**.
+5.  **Login**:
+    *   Log in with the user you just created.
+    *   Give it a moment to scan your library. If you have files in the cloud, posters should start appearing!
 
 ---
 
