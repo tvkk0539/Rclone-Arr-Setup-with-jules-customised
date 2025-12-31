@@ -422,3 +422,27 @@ When creating your Firewall Rule in Google Cloud Console:
     ```
     7575,8096,5055,7878,8080,9696,6880,5572,5060
     ```
+
+---
+
+## 13. Finding Your Passwords & Keys
+
+If you used the automated `deploy.sh` script, it generated some passwords for you (like the **Homarr Encryption Key** or **Aria2 Secret**).
+
+**Where are they?**
+They are safely stored in a file called `.env` in your project folder.
+
+**How to see them:**
+Run this command in your terminal:
+```bash
+cat .env
+```
+
+You will see a list like this:
+```env
+RCLONE_USER=admin
+RCLONE_PASS=password
+SECRET_ENCRYPTION_KEY=a1b2c3d4...  <-- This is your Homarr Key
+RPC_SECRET=xyz...                  <-- This is your Aria2 Key
+```
+Copy what you need from there!
