@@ -479,3 +479,30 @@ You must create the Firewall Rule mentioned in **Section 12**.
     ```
 7.  Click **Create**.
 8.  Wait 1 minute and try your link again!
+
+### Problem 3: Everything seems fine, but still nothing?
+If you are sure you have the right IP and the Firewall rule is correct, let's look inside the VM.
+
+**Is Nginx needed?**
+No. You do **NOT** need Nginx to access the dashboard via ports (like `:7575`). The script sets everything up directly.
+
+**Diagnostic Steps:**
+Run these commands in your VM terminal to see what is happening:
+
+1.  **Check if the apps are actually running:**
+    ```bash
+    docker compose ps
+    ```
+    *   Look at the "State" column. It should say `Up`. If it says `Exit` or `Restarting`, the app crashed.
+
+2.  **Check if the port is open:**
+    ```bash
+    sudo lsof -i :7575
+    ```
+    *   If you see output like `docker-pr ... LISTEN`, it means the server is ready and listening.
+    *   If you see **nothing**, the app is not running.
+
+**Common Mistake: The Firewall Target**
+When you created the Google Firewall rule, go back and check the **"Targets"** setting.
+*   **Correct**: `All instances in the network`
+*   **Incorrect**: `Specified target tags` (If you chose this, the rule is active but **not applying to your VM**!)
