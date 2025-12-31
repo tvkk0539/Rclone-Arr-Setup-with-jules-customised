@@ -157,12 +157,13 @@ else
     if [ "$OPTION" == "1" ]; then
         echo -e "${YELLOW}Paste your config content below. Press Ctrl+D when finished:${NC}"
         cat > "$CONFIG_FILE"
-        echo -e "${GREEN}Config saved to $CONFIG_FILE${NC}"
+        echo -e "${GREEN}Config saved to: $REPO_ROOT/$CONFIG_FILE${NC}"
     else
         echo -e "${BLUE}Starting Rclone Wizard...${NC}"
         echo -e "${YELLOW}IMPORTANT: If asked for auto-config, say NO (n) because this is a headless server.${NC}"
         # We run this as the sudo user to avoid permission issues with the created file
         docker run --rm -it -v "$REPO_ROOT/configs/rclone:/config/rclone" rclone/rclone config --config /config/rclone/rclone.conf
+        echo -e "${GREEN}Config saved to: $REPO_ROOT/$CONFIG_FILE${NC}"
     fi
 fi
 

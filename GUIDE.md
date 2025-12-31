@@ -535,6 +535,23 @@ When you created the Google Firewall rule, go back and check the **"Targets"** s
 *   **Correct**: `All instances in the network`
 *   **Incorrect**: `Specified target tags` (If you chose this, the rule is active but **not applying to your VM**!)
 
+---
+
+## 16. File Locations (Where is everything?)
+
+It can be confusing to know where files are, because Docker "maps" folders.
+
+| What is it? | Location on YOUR VM (Host) | Location inside Docker (Container) |
+| :--- | :--- | :--- |
+| **Rclone Config** | `~/Rclone-Arr-Setup/configs/rclone/rclone.conf` | `/config/rclone/rclone.conf` |
+| **Downloads** | `~/downloads` | `/downloads` |
+| **Logs** | `~/Rclone-Arr-Setup/logs` | `/logs` |
+| **Automation Scripts** | `~/Rclone-Arr-Setup/scripts` | `/scripts` |
+
+**The Magic Link:**
+When you see `-v ...:/...` in the code, it connects the **Left Side** (Your VM) to the **Right Side** (The Container).
+So if you edit the file on your VM, the Container sees the change immediately!
+
 ### Problem 4: `rclone-mount` is Restarting (Name Mismatch)
 If you run `docker compose ps` and see `rclone-mount` has state **Restarting**, it usually means the name in your `.env` doesn't match your config.
 
