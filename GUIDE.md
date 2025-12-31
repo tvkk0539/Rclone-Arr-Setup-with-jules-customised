@@ -143,6 +143,7 @@ docker compose ps
 ## 7. Connecting the Services
 
 Now open your browser and go to your VM's External IP address with the ports.
+Example: `http://<YOUR_VM_IP>:7575` (Homarr Dashboard).
 
 ### Step A: Configure Prowlarr (Indexer Manager)
 1.  Go to `http://<YOUR_VM_IP>:9696`
