@@ -54,7 +54,6 @@ services:
       --rc-user ${RCLONE_USER} 
       --rc-pass ${RCLONE_PASS} 
       --rc-serve
-      --config /config/rclone/rclone.conf
     environment:
       - RCLONE_USER=${RCLONE_USER}
       - RCLONE_PASS=${RCLONE_PASS}
@@ -64,48 +63,6 @@ services:
       - ${MEDIA_SERVER_ROOT}/logs:/logs
     restart: unless-stopped
 
-  # New Service: Rclone Mount (The Bridge)
-  # This mounts your Cloud Drive to a folder on your VM so Jellyfin can read it.
-  rclone-mount:
-    image: rclone/rclone:latest
-    container_name: rclone-mount
-    privileged: true
-    devices:
-      - /dev/fuse
-    cap_add:
-      - SYS_ADMIN
-    security_opt:
-      - apparmor:unconfined
-    environment:
-      - RCLONE_REMOTE=${RCLONE_REMOTE}
-    command: >
-      mount ${RCLONE_REMOTE}: /data/mount
-      --allow-other
-      --dir-cache-time 72h
-      --vfs-cache-mode full
-      --vfs-read-chunk-size 32M
-      --umask 000
-      --config /config/rclone/rclone.conf
-    volumes:
-      - ${MEDIA_SERVER_ROOT}/configs/rclone:/config/rclone
-      - ${MEDIA_SERVER_ROOT}/cloud_media:/data/mount:shared
-    restart: unless-stopped
-
-  # New Service: Jellyfin (The Streamer)
-  # This plays the movies from the mounted folder.
-  jellyfin:
-    image: lscr.io/linuxserver/jellyfin:latest
-    container_name: jellyfin
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Asia/Kolkata
-    volumes:
-      - ${MEDIA_SERVER_ROOT}/configs/jellyfin:/config
-      - ${MEDIA_SERVER_ROOT}/cloud_media:/data/movies
-    ports:
-      - 8096:8096
-    restart: unless-stopped
     
   radarr:
     image: lscr.io/linuxserver/radarr:latest

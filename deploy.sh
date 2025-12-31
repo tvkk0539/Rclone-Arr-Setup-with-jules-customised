@@ -182,8 +182,8 @@ if ! docker network inspect nginx_network &>/dev/null; then
 fi
 
 # Service Selection Logic
-CORE_SERVICES="rclone rclone-mount homarr"
-OPTIONAL_SERVICES=("radarr" "prowlarr" "qbittorrent" "aria2" "ariang" "jellyseerr" "jellyfin" "profilarr")
+CORE_SERVICES="rclone homarr"
+OPTIONAL_SERVICES=("radarr" "prowlarr" "qbittorrent" "aria2" "ariang" "jellyseerr" "profilarr")
 
 echo -e "\n${BLUE}Installation Mode:${NC}"
 echo "1) Full Installation (Install Everything)"
