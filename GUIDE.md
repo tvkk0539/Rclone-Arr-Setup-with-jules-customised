@@ -20,7 +20,10 @@ Since you have Google Cloud credits, here is how to set up the Virtual Machine.
 1.  Go to **Google Cloud Console** -> **Compute Engine** -> **VM Instances**.
 2.  Click **Create Instance**.
 3.  **Region**: Choose a region close to you (e.g., `asia-south1` for Mumbai, `us-central1` for US).
-4.  **Machine Type**: `e2-medium` (2 vCPUs, 4GB RAM) is a good starting point. You can upgrade later if needed.
+4.  **Machine Type**: Choose based on your usage:
+    *   **Option A: 4 GB RAM (`e2-medium`) - Recommended**: Best if you plan to use **Jellyfin** to stream movies. Jellyfin needs more RAM to run smoothly without crashing.
+    *   **Option B: 2 GB RAM (`e2-small`) - Saver Mode**: Good if you **only** want to download/upload and **do not** use Jellyfin. The download tools are lightweight and run fine on 2GB.
+    *   *Pro Tip*: You can start with `e2-small` to save money. If you later decide to stream, you can just "Stop" the VM, edit the settings to upgrade to `e2-medium`, and start it again!
 5.  **Boot Disk**:
     *   Click "Change".
     *   Select **Ubuntu**.
