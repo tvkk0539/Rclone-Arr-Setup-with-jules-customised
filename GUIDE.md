@@ -232,6 +232,9 @@ Rclone is the most important tool here, and it does two very different jobs:
 **1. The Uploader (Space Saver)**
 *   **What it does:** When a movie finishes downloading, our scripts tell Rclone: *"Take this file and send it to Google Drive/OneDrive."*
 *   **Why it's important:** This is why your VM (which only has 30GB-50GB space) never runs out of space, even if you have 1000 movies.
+*   **Important Limitation (The Golden Rule):** The download happens on your **VM's disk** first. It is only moved to the cloud *after* it finishes.
+    *   *Example*: If you have a **30GB** VM, you **cannot** download a **50GB** movie. The disk will fill up before the move happens.
+    *   *Advice*: Keep your individual downloads smaller than your free disk space (e.g., stick to 10GB-20GB movies).
 *   **How it works:** It uses the Rclone API to upload files in the background.
 
 **2. The Virtual Drive (The "Mount")**
