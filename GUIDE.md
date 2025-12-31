@@ -9,7 +9,7 @@ This project allows you to run a complete "Netflix-like" media server on a cloud
 2.  **Radarr**: It sees the request and finds the movie on torrent sites (via Prowlarr).
 3.  **qBittorrent**: Downloads the movie.
 4.  **Automation Scripts**: As soon as the download finishes, a special script **moves the file to your Cloud Storage** (Google Drive, OneDrive, etc.) using **Rclone**.
-5.  **Result**: You have a huge media library stored in the cloud, but managed automatically by your server.
+5.  **Result**: You have a huge media library stored in the cloud.
 
 ---
 
@@ -37,7 +37,7 @@ You need to allow specific ports so you can access the websites.
 4.  **Targets**: `All instances in the network`
 5.  **Source IPv4 ranges**: `0.0.0.0/0`
 6.  **Protocols and ports**: Select `TCP` and enter:
-    `7575,8080,6880,5572,7878,9696,5055,5060`
+    `7575,8080,6880,5572,7878,9696,5055,5060,8096`
 7.  Click **Create**.
 
 ---
@@ -114,6 +114,11 @@ This connects your server to your Cloud Storage (Google Drive, etc.).
     *   Follow the specific authentication steps for your provider.
         *   *Tip for Headless (Server) Setup*: Since your VM has no browser, when it asks "Use auto config?", say **No** (`n`). It will give you a command to run on your *local computer* to authorize access and give you a code to paste back into the terminal.
 
+### The Magic of Rclone: Upload vs. Mount
+We use Rclone in two ways in this project:
+1.  **The Uploader**: When you download a movie, scripts send it to the cloud immediately.
+2.  **The Mount (Streaming)**: We use a special container (`rclone-mount`) that tricks your server into thinking your Google Drive is a **local folder** (`/data/movies`). This allows **Jellyfin** to play movies directly from the cloud without downloading them!
+
 ---
 
 ## 6. Launching the Services
@@ -138,7 +143,6 @@ docker compose ps
 ## 7. Connecting the Services
 
 Now open your browser and go to your VM's External IP address with the ports.
-Example: `http://<YOUR_VM_IP>:7575` (Homarr Dashboard).
 
 ### Step A: Configure Prowlarr (Indexer Manager)
 1.  Go to `http://<YOUR_VM_IP>:9696`
@@ -162,7 +166,7 @@ Example: `http://<YOUR_VM_IP>:7575` (Homarr Dashboard).
     *   **Username/Password**: `admin` / `adminadmin` (default).
     *   **Category**: `radarr` (Important!).
     *   Click **Test** then **Save**.
-3.  **Setup the Custom Script (The Magic Part)**:
+3.  **Setup the Custom Script**:
     *   **Settings** -> **Connect**.
     *   Click **+** -> **Custom Script**.
     *   **Name**: Rclone Upload
@@ -173,6 +177,7 @@ Example: `http://<YOUR_VM_IP>:7575` (Homarr Dashboard).
     *   **On Download**: **Yes** (Check this)
     *   **On Upgrade**: **Yes** (Check this)
     *   Click **Save**.
+4.  **Root Folder**: When adding a movie, set the Root Folder to anything (e.g., `/movies`). It doesn't matter much because the script moves the file away, but Radarr needs a place to *think* the file goes.
 
 ### Step C: Configure qBittorrent
 1.  Go to `http://<YOUR_VM_IP>:8080`
@@ -185,12 +190,22 @@ Example: `http://<YOUR_VM_IP>:7575` (Homarr Dashboard).
     ```
 6.  Click **Save**.
 
+### Step D: Configure Jellyfin (The Streamer)
+1.  Go to `http://<YOUR_VM_IP>:8096`.
+2.  Follow the setup wizard.
+3.  **Add Media Library**:
+    *   Content type: **Movies**.
+    *   Folders: Click **+** and navigate to `/data/movies`.
+        *   *Note: If you don't see your cloud files yet, make sure you actually have files in your cloud storage!*
+    *   Finish the setup.
+4.  Now you can login and watch movies!
+
 ---
 
 ## 8. How to Use
 
 1.  Open **Jellyseerr** (`http://<YOUR_VM_IP>:5055`).
-2.  Login and follow the setup wizard to connect it to your Radarr.
+2.  Login and follow the setup wizard to connect it to your Radarr and Jellyfin.
 3.  Search for a movie (e.g., "The Matrix").
 4.  Click **Request**.
 5.  **What happens next?**
@@ -200,6 +215,7 @@ Example: `http://<YOUR_VM_IP>:7575` (Homarr Dashboard).
     *   qBittorrent downloads it to your VM.
     *   **Once finished**: The `radarr_manage.sh` script triggers.
     *   The script tells Rclone to move the file to your Google Drive `Movies` folder.
-    *   The file is deleted from your VM to save space.
+    *   The file is deleted from your VM.
+    *   **Watching**: Open Jellyfin, scan your library, and the movie will appear, streaming directly from the cloud!
 
 Enjoy your automated cloud media server!
