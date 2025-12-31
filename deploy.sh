@@ -49,6 +49,20 @@ fi
 # 4. Configure Environment Variables
 echo -e "\n${GREEN}[3/7] Configuring Project Environment...${NC}"
 
+# Check if we are in the project folder
+if [ ! -f "docker-compose.yml" ]; then
+    echo -e "${YELLOW}docker-compose.yml not found. Cloning repository...${NC}"
+
+    # Install git if missing
+    if ! command -v git &> /dev/null; then
+        apt-get install -y git
+    fi
+
+    git clone https://github.com/vinayak-7-0-3/Rclone-Arr-Setup.git
+    cd Rclone-Arr-Setup || exit 1
+    echo -e "${GREEN}Cloned and entered repository.${NC}"
+fi
+
 # Get the directory where the script is located (should be repo root)
 REPO_ROOT=$(pwd)
 CURRENT_USER=${SUDO_USER:-$USER}
