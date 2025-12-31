@@ -263,4 +263,37 @@ Many people get these confused. Here is the difference:
 3.  The **Delivery Guy (Rclone Uploader)** puts it in the **Freezer (Cloud Storage)**.
 4.  When you want to eat, the **Magic Bridge (Rclone Mount)** brings it to your **TV (Jellyfin)** instantly!
 
-Enjoy your automated cloud media server!
+---
+
+## 10. Advanced: Power Saving & Manual Control
+
+If you have a small VM (like the e2-medium), running everything at once might be heavy.
+The good news is that **Jellyfin** (the streaming part) is separate from the **Downloaders** (Radarr/qBittorrent).
+
+You can save CPU and RAM by turning on the "Streaming Mode" only when you want to watch a movie.
+
+**Option A: Run Everything (Default)**
+Use this if you want everything on all the time.
+```bash
+docker compose up -d
+```
+
+**Option B: Run ONLY the Download Tools (Save CPU)**
+If you are just downloading movies and not watching anything right now, use this. It leaves Jellyfin and the Rclone Mount OFF.
+```bash
+docker compose up -d qbittorrent radarr prowlarr rclone aria2
+```
+
+**Option C: Turn OFF Jellyfin when you are done watching**
+When you finish your movie, run this to stop the heavy services. Your downloads will still work in the background!
+```bash
+docker compose stop jellyfin rclone-mount
+```
+
+**Option D: Turn ON Jellyfin when you want to watch**
+Ready for movie night? Turn the streaming services back on:
+```bash
+docker compose up -d jellyfin rclone-mount
+```
+
+Enjoy your flexible media server!
