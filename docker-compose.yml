@@ -18,6 +18,8 @@ services:
       - ${MEDIA_SERVER_ROOT}/logs:/logs
       - ${MEDIA_SERVER_ROOT}/scripts:/scripts
       - ${MEDIA_SERVER_ROOT}/locks:/tmp/locks
+    ports:
+      - 8080:8080
     restart: unless-stopped
     
   aria2:
@@ -38,11 +40,15 @@ services:
       - ${MEDIA_SERVER_ROOT}/logs:/logs
       - ${MEDIA_SERVER_ROOT}/scripts:/scripts
       - ${MEDIA_SERVER_ROOT}/locks:/tmp/locks
+    ports:
+      - 6800:6800
     restart: unless-stopped
     
   ariang:
     image: p3terx/ariang:latest
     container_name: ariang
+    ports:
+      - 6880:6880
     restart: unless-stopped
     
   rclone:
@@ -54,6 +60,7 @@ services:
       --rc-user ${RCLONE_USER} 
       --rc-pass ${RCLONE_PASS} 
       --rc-serve
+      --config /config/rclone/rclone.conf
     environment:
       - RCLONE_USER=${RCLONE_USER}
       - RCLONE_PASS=${RCLONE_PASS}
@@ -61,6 +68,8 @@ services:
       - ${MEDIA_SERVER_ROOT}/configs/rclone:/config/rclone
       - ${DOWNLOADS_FOLDER}:/downloads  
       - ${MEDIA_SERVER_ROOT}/logs:/logs
+    ports:
+      - 5572:5572
     restart: unless-stopped
 
     
@@ -80,6 +89,8 @@ services:
       - ${MEDIA_SERVER_ROOT}/scripts:/scripts
       - ${MEDIA_SERVER_ROOT}/logs:/logs
       - ${MEDIA_SERVER_ROOT}/locks:/tmp/locks
+    ports:
+      - 7878:7878
     restart: unless-stopped
     
   prowlarr:
@@ -91,6 +102,8 @@ services:
       - TZ=Asia/Kolkata
     volumes:
       - ${MEDIA_SERVER_ROOT}/configs/prowlarr:/config
+    ports:
+      - 9696:9696
     restart: unless-stopped
     
   homarr:
@@ -102,6 +115,8 @@ services:
       - ${MEDIA_SERVER_ROOT}/configs/homarr:/appdata
     environment:
       - SECRET_ENCRYPTION_KEY=${SECRET_ENCRYPTION_KEY}
+    ports:
+      - 7575:7575
       
   jellyseerr:
     image: fallenbagel/jellyseerr:latest
@@ -112,6 +127,8 @@ services:
       - PORT=5055
     volumes:
       - ${MEDIA_SERVER_ROOT}/configs/jellyseer:/app/config
+    ports:
+      - 5055:5055
     restart: unless-stopped
     
   profilarr:
@@ -121,6 +138,8 @@ services:
       - ${MEDIA_SERVER_ROOT}/configs/profilarr:/config
     environment:
       - TZ=Asia/Kolkata
+    ports:
+      - 5060:5060
     restart: unless-stopped
    
 networks:
