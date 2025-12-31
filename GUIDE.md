@@ -392,3 +392,31 @@ When you first open Homarr, it might be empty or have default apps.
 7.  Exit Edit Mode.
 
 Now you have a one-click button to open your media player!
+
+---
+
+## 12. Port Reference & GCP Firewall Cheat Sheet
+
+Use this list to know which port does what, and copy the code below to open them all in Google Cloud Firewall.
+
+| Application | Port | Purpose |
+| :--- | :--- | :--- |
+| **Homarr** | `7575` | **Dashboard** (Start Here). Links to everything else. |
+| **Jellyfin** | `8096` | **Streaming**. Watch your movies here. |
+| **Jellyseerr** | `5055` | **Requests**. Browse movies and click "Request". |
+| **Radarr** | `7878` | **Movie Manager**. Settings for movies. |
+| **qBittorrent** | `8080` | **Downloader**. See download progress. |
+| **Prowlarr** | `9696` | **Indexer Manager**. Connects torrent sites. |
+| **Aria2** | `6880` | **Alternative Downloader** (AriaNg UI). |
+| **Rclone WebUI** | `5572` | **Cloud Manager**. See your Google Drive files. |
+| **Profilarr** | `5060` | **Profile Manager**. Advanced settings. |
+
+### GCP Firewall Command
+When creating your Firewall Rule in Google Cloud Console:
+1.  **Name**: `allow-media-ports`
+2.  **Targets**: `All instances in the network`
+3.  **Source ranges**: `0.0.0.0/0`
+4.  **Protocols and ports**: Paste exactly this list:
+    ```
+    7575,8096,5055,7878,8080,9696,6880,5572,5060
+    ```
