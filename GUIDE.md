@@ -125,9 +125,9 @@ If you are starting from scratch, follow these steps:
 2.  **Run the Configuration Wizard**:
     Run this command in your VM terminal (you do not need to be inside a container):
     ```bash
-    docker run --rm -it -v $(pwd)/configs/rclone:/config/rclone rclone/rclone config
+    docker run --rm -it -v $(pwd)/configs/rclone:/config/rclone rclone/rclone config --config /config/rclone/rclone.conf
     ```
-    *   *What this command does*: It starts a temporary Rclone container. The `-v` part makes sure that the config file you create is saved **on your VM's hard drive** (in `configs/rclone/`), so the other services can find it later.
+    *   *What this command does*: It starts a temporary Rclone container. We tell it explicitly to save the config to `/config/rclone/rclone.conf` so it matches our setup. The `-v` part makes sure that file is saved **on your VM's hard drive** (in `configs/rclone/`), so the other services can find it later.
 
 3.  **Follow the Wizard**:
     *   Type `n` for **New Remote**.
@@ -361,3 +361,31 @@ docker compose up -d jellyfin rclone-mount
 ```
 
 Enjoy your flexible media server!
+
+---
+
+## 11. Understanding Your Dashboard (Homarr)
+
+Think of **Homarr** as your "Control Center".
+
+*   **Before Homarr**: You had to remember "Jellyfin is on port 8096", "Radarr is on 7878", "qBittorrent is 8080".
+*   **With Homarr**: You just go to `http://<YOUR_VM_IP>:7575`. It gives you a beautiful screen with buttons for everything.
+
+### Features
+1.  **Launcher**: It has big icons. Click "Radarr" to open Radarr. Click "Jellyfin" to open Jellyfin.
+2.  **Integration**: You can configure it to show you *live info* on the dashboard.
+    *   *Example*: You can make the qBittorrent button show your current download speed!
+    *   *Example*: You can make the Radarr button show how many movies are missing.
+3.  **Customization**: You can drag and drop the icons to arrange them how you like.
+
+### How to Add Your First App
+When you first open Homarr, it might be empty or have default apps.
+1.  Click the **Edit Mode** button (top right, usually a pencil icon).
+2.  Click **Add Tile** -> **App**.
+3.  **App Name**: Type `Jellyfin`.
+4.  **Internal Address**: `http://jellyfin:8096` (This is how Homarr finds it inside Docker).
+5.  **External Address**: `http://<YOUR_VM_IP>:8096` (This is how *you* find it).
+6.  Click **Save**.
+7.  Exit Edit Mode.
+
+Now you have a one-click button to open your media player!
