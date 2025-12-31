@@ -480,6 +480,34 @@ You must create the Firewall Rule mentioned in **Section 12**.
 7.  Click **Create**.
 8.  Wait 1 minute and try your link again!
 
+---
+
+## 15. Restarting & Updating
+
+If you need to restart your server or apply changes, be careful!
+
+**The "Danger" of `docker compose up -d`**
+If you run `docker compose up -d` by itself, it will try to start **EVERY** app in the file.
+*   *Scenario*: You used the script to skip Jellyfin.
+*   *Mistake*: You run `docker compose up -d`.
+*   *Result*: **Jellyfin starts anyway**, using up your RAM.
+
+**The Correct Way to Restart**
+Always use the `deploy.sh` script again. It remembers the logic.
+```bash
+sudo ./deploy.sh
+```
+1.  Choose **Option 2 (Custom Installation)**.
+2.  Enter the numbers of the apps you want to **SKIP**.
+3.  It will restart only the apps you want.
+
+**The Manual Way (For Experts)**
+If you don't want to use the script, you must list every app you want to start:
+```bash
+docker compose up -d radarr qbittorrent rclone rclone-mount homarr
+```
+*(This is annoying to type, so just use the script!)*
+
 ### Problem 3: Everything seems fine, but still nothing?
 If you are sure you have the right IP and the Firewall rule is correct, let's look inside the VM.
 
