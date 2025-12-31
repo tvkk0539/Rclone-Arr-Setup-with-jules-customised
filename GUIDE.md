@@ -93,6 +93,8 @@ cd Rclone-Arr-Setup
     *   `RCLONE_REMOTE`: Name of your remote (we will set this up next, usually named `drive` or `onedrive`).
     *   `RCLONE_USER` / `RCLONE_PASS`: Create a username and password for the Rclone Web UI.
     *   `RPC_SECRET`: Create a random password for Aria2.
+    *   `SECRET_ENCRYPTION_KEY`: A secret key for Homarr to encrypt your sessions.
+        *   *How to get it*: Run `openssl rand -hex 32` in your terminal to generate one, or just type a very long random string yourself (e.g., `my_super_secret_homarr_key_12345`).
 
     Save and exit (Ctrl+O, Enter, Ctrl+X).
 
