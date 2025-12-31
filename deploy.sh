@@ -215,8 +215,10 @@ fi
 
 echo -e "\n${GREEN}[7/7] Deployment Complete!${NC}"
 
-# Get IP Address
-IP_ADDRESS=$(hostname -I | awk '{print $1}')
+# Get External IP Address (for Google Cloud / VPS)
+# We try to curl a public service. If it fails, we fall back to the internal IP.
+PUBLIC_IP=$(curl -s https://api.ipify.org || hostname -I | awk '{print $1}')
+IP_ADDRESS=${PUBLIC_IP:-localhost}
 
 echo -e "\n${BLUE}=================================================${NC}"
 echo -e "${BLUE}       Access Your Services                     ${NC}"

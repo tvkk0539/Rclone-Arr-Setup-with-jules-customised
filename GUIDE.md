@@ -446,3 +446,36 @@ SECRET_ENCRYPTION_KEY=a1b2c3d4...  <-- This is your Homarr Key
 RPC_SECRET=xyz...                  <-- This is your Aria2 Key
 ```
 Copy what you need from there!
+
+---
+
+## 14. Troubleshooting: "Site Can't Be Reached"
+
+If you deployed everything successfully but your browser says **"This site can't be reached"**, it is usually one of two simple problems.
+
+### Problem 1: You are using the Wrong IP (Internal IP)
+The script might tell you an IP address starting with `10.x.x.x` or `192.168.x.x`. This is the VM's **private** address. You cannot access this from your home computer.
+
+**The Fix: Find your External IP**
+1.  Go to the **Google Cloud Console**.
+2.  Go to **Compute Engine** -> **VM Instances**.
+3.  Look for the column named **External IP**.
+4.  Copy that number (e.g., `34.123.45.67`).
+5.  Use that in your browser: `http://34.123.45.67:7575`.
+
+### Problem 2: The Firewall is Blocking You
+By default, Google blocks all connections to your VM except SSH. Even if the server is running, the "door" is locked.
+
+**The Fix: Open the Ports**
+You must create the Firewall Rule mentioned in **Section 12**.
+1.  Go to **VPC Network** -> **Firewall**.
+2.  Click **Create Firewall Rule**.
+3.  **Name**: `allow-media-ports`.
+4.  **Targets**: Select `All instances in the network`.
+5.  **Source IPv4 ranges**: Type `0.0.0.0/0`.
+6.  **Protocols and ports**: Select **TCP** and paste this exact list:
+    ```
+    7575,8096,5055,7878,8080,9696,6880,5572,5060
+    ```
+7.  Click **Create**.
+8.  Wait 1 minute and try your link again!
