@@ -74,8 +74,10 @@ RANDOM_SECRET=$(openssl rand -hex 12)
 read -p "Enter RPC Secret for Aria2 (Press Enter to generate random): " INPUT_RPC
 RPC_SECRET=${INPUT_RPC:-$RANDOM_SECRET}
 
-# Generate Encryption Key for Homarr
-HOMARR_KEY=$(openssl rand -hex 32)
+# Generate/Ask for Encryption Key for Homarr
+RANDOM_KEY=$(openssl rand -hex 32)
+read -p "Enter Homarr Encryption Key (Press Enter to generate random): " INPUT_KEY
+HOMARR_KEY=${INPUT_KEY:-$RANDOM_KEY}
 
 # Set Downloads Folder
 DOWNLOADS_FOLDER="$USER_HOME/downloads"
