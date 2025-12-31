@@ -155,6 +155,23 @@ fi
 # Fix config permissions
 chown "$CURRENT_USER:$CURRENT_USER" "$CONFIG_FILE" 2>/dev/null
 
+# Smart Fix: Check if Remote Name matches Config
+# We grep the first line starting with '[' to find the actual remote name in the file
+ACTUAL_REMOTE_NAME=$(grep -m 1 "^\[" "$CONFIG_FILE" | tr -d '[]')
+
+if [ ! -z "$ACTUAL_REMOTE_NAME" ] && [ "$ACTUAL_REMOTE_NAME" != "$RCLONE_REMOTE" ]; then
+    echo -e "\n${YELLOW}WARNING: Mismatch detected!${NC}"
+    echo "You entered remote name: '$RCLONE_REMOTE'"
+    echo "But your config file has: '$ACTUAL_REMOTE_NAME'"
+    echo -e "${GREEN}Auto-correcting .env file to use '$ACTUAL_REMOTE_NAME'...${NC}"
+
+    # Update .env using sed
+    sed -i "s/RCLONE_REMOTE=$RCLONE_REMOTE/RCLONE_REMOTE=$ACTUAL_REMOTE_NAME/" .env
+
+    # Update our variable for the script execution
+    RCLONE_REMOTE=$ACTUAL_REMOTE_NAME
+fi
+
 # 7. Start Services
 echo -e "\n${GREEN}[6/7] Starting Services...${NC}"
 

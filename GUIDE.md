@@ -506,3 +506,16 @@ Run these commands in your VM terminal to see what is happening:
 When you created the Google Firewall rule, go back and check the **"Targets"** setting.
 *   **Correct**: `All instances in the network`
 *   **Incorrect**: `Specified target tags` (If you chose this, the rule is active but **not applying to your VM**!)
+
+### Problem 4: `rclone-mount` is Restarting (Name Mismatch)
+If you run `docker compose ps` and see `rclone-mount` has state **Restarting**, it usually means the name in your `.env` doesn't match your config.
+
+**Example:**
+*   You told the script your remote is named `gdrive`.
+*   But your `rclone.conf` has `[gdrive2tb001]`.
+
+**The Fix:**
+1.  Open your `.env` file: `nano .env`
+2.  Find `RCLONE_REMOTE=gdrive`
+3.  Change it to the name inside the brackets: `RCLONE_REMOTE=gdrive2tb001`
+4.  Save and Restart: `docker compose up -d`
