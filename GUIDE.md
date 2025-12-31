@@ -99,6 +99,25 @@ cd Rclone-Arr-Setup
 
 This connects your server to your Cloud Storage (Google Drive, etc.).
 
+### Option A: I have an existing `rclone.conf` file (Easiest)
+If you have used Rclone before and have a file with your accounts:
+
+1.  **Open `rclone.conf` on your computer** with Notepad or a text editor. Copy everything inside.
+2.  **Create the file on your VM**:
+    ```bash
+    mkdir -p configs/rclone
+    nano configs/rclone/rclone.conf
+    ```
+3.  **Paste the content** into the terminal.
+4.  **Save and Exit**: Press `Ctrl+O`, `Enter`, then `Ctrl+X`.
+5.  **Important**: Check the name in the square brackets `[...]` in your file (e.g., `[my_drive]`).
+    *   Open your `.env` file (`nano .env`).
+    *   Update `RCLONE_REMOTE=my_drive` to match that name.
+    *   **Done!** You can skip to Step 6.
+
+### Option B: I need to create a new connection (The Wizard)
+If you are starting from scratch, follow these steps:
+
 1.  Create config directory:
     ```bash
     mkdir -p configs/rclone
