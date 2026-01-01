@@ -574,6 +574,40 @@ sudo netstat -tulpn | grep 7575
 *   **Good**: `0.0.0.0:7575` (Listening on all interfaces)
 *   **Bad**: `127.0.0.1:7575` (Listening only inside the VM)
 
+### Problem 6: Lost qBittorrent Password
+If you forgot your login for qBittorrent, don't panic.
+
+**Method 1: Try the Default**
+*   **Username**: `admin`
+*   **Password**: `adminadmin`
+
+**Method 2: Check Logs (For Temporary Password)**
+Sometimes newer versions generate a random password on first start.
+Run this command:
+```bash
+docker compose logs qbittorrent | grep -i password
+```
+Look for a line saying: *"Temporary password generated: XXXXXX"*.
+
+**Method 3: The "Nuclear" Reset**
+If nothing works, we can delete the config file to reset the password to default.
+*(Warning: This resets your settings like download paths, but keeps your active downloads).*
+
+1.  Stop qBittorrent:
+    ```bash
+    docker compose stop qbittorrent
+    ```
+2.  Delete the config file:
+    ```bash
+    # Note: Folder might be qBittorrent or qbittorrent. Use 'ls configs' to check.
+    rm configs/qBittorrent/qBittorrent.conf
+    ```
+3.  Start it again:
+    ```bash
+    docker compose up -d qbittorrent
+    ```
+4.  Login with `admin` / `adminadmin`.
+
 ---
 
 ## 16. File Locations (Where is everything?)
