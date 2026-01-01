@@ -152,7 +152,8 @@ remove_torrent_from_client() {
         local cookie_file="/tmp/qbit_cookie_$(date +%s).txt"
 
         # PRIORITY 1: Check for temporary password in logs (to avoid IP ban from failed attempts)
-        local temp_pass=$(grep -r "A temporary password is provided for this session:" /logs | tail -n 1 | awk -F ': ' '{print $NF}' | tr -d '[:space:]')
+        # Search in /config (application logs) AND /logs (in case user mapped it differently)
+        local temp_pass=$(grep -r "A temporary password is provided for this session:" /config /logs 2>/dev/null | tail -n 1 | awk -F ': ' '{print $NF}' | tr -d '[:space:]')
 
         if [ ! -z "$temp_pass" ]; then
             log_message "Found temporary password in logs: $temp_pass. Attempting login..."
@@ -164,7 +165,8 @@ remove_torrent_from_client() {
                 -d "username=admin&password=$temp_pass" \
                 "http://127.0.0.1:8080/api/v2/auth/login")
 
-            if [[ "$temp_login_response" == *"Ok."* ]] || [[ "$temp_login_response" == *"200 OK"* ]]; then
+            # Strictly check for "Ok." in body to confirm success. "200 OK" header is not enough as qBit returns it on failure too.
+            if [[ "$temp_login_response" == *"Ok."* ]]; then
                  log_message "Temporary password login successful. Retrying torrent removal..."
 
                  local retry_response=$(curl -s -X POST \
@@ -197,7 +199,8 @@ remove_torrent_from_client() {
             -d "username=admin&password=adminadmin" \
             "http://127.0.0.1:8080/api/v2/auth/login")
 
-        if [[ "$login_response" == *"Ok."* ]] || [[ "$login_response" == *"200 OK"* ]]; then
+        # Strictly check for "Ok." in body.
+        if [[ "$login_response" == *"Ok."* ]]; then
             log_message "Default login successful. Retrying torrent removal..."
 
             local retry_response=$(curl -s -X POST \
