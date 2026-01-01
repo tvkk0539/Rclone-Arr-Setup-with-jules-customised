@@ -230,16 +230,21 @@ Example: `http://<YOUR_VM_IP>:7575` (Homarr Dashboard).
     *   Click **Save**.
 4.  **Root Folder**: When adding a movie, set the Root Folder to anything (e.g., `/movies`). It doesn't matter much because the script moves the file away, but Radarr needs a place to *think* the file goes.
 
-### Step C: Configure qBittorrent
-1.  Go to `http://<YOUR_VM_IP>:8080`
+### Step C: Configure qBittorrent (CRITICAL STEP)
+⚠️ **If you skip this, your downloads will NEVER upload to the cloud!** ⚠️
+
+1.  Go to `http://<YOUR_VM_IP>:8080`.
 2.  Login: `admin` / `adminadmin`.
-3.  **Tools** -> **Options** -> **Downloads**.
-4.  Check **"Run external program on torrent completion"**.
-5.  Paste this exact command:
+3.  Go to **Tools** (Gear Icon) -> **Options** -> **Downloads**.
+4.  Scroll to the bottom to **"Run external program"**.
+5.  **CHECK the box**: "Run on torrent finished".
+6.  **PASTE this exact command** in the text box:
     ```bash
     /scripts/qbit_manage.sh "%N" "%F" "%L"
     ```
-6.  Click **Save**.
+7.  Click **Save** at the bottom.
+
+*Note: This tells qBittorrent to "Wake up" our script every time a download finishes.*
 
 ### Step D: Configure Jellyfin (The Streamer)
 
