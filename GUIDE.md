@@ -249,10 +249,14 @@ Copy that password (e.g., `pGTRKcuUS`) and use it to log in as `admin`.
     *   **CHECK the box**: `Bypass authentication for clients on localhost`.
 3.  Scroll down and click **Save**.
 
-**Why do this manually?**
-*   **It stops the random passwords:** Once you save this, qBittorrent stops generating temporary passwords on every restart.
-*   **It fixes automation forever:** By checking "Bypass localhost", the cleanup script (running inside the container) can delete torrents instantly without needing to know your password.
-*   **Why not a script?** Pre-setting the password via script is complex (it requires PBKDF2 encryption). Doing it manually takes 30 seconds and solves the problem permanently.
+**Why is this the Best Method? (The "VIP Pass")**
+
+*   **It ignores your password:** By checking "Bypass authentication for clients on localhost", you give the script a **"VIP Pass"**.
+    *   The script runs inside the container (on "localhost").
+    *   qBittorrent sees it is local and says: *"I trust you. You don't need a login."*
+    *   **Result:** You can change your Web UI password to anything you want (or change it daily), and **you never need to update the script or .env file**. The script will always work.
+*   **It stops the random passwords:** Once you save a manual password, qBittorrent stops generating random temporary ones on restart.
+*   **It is permanent:** Do this once, and it works forever.
 
 **Now, Set Up the Script:**
     *   Go to **Options** -> **Downloads**.
