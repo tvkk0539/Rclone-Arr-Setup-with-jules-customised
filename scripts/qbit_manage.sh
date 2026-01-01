@@ -147,9 +147,41 @@ remove_torrent_from_client() {
         log_message "Torrent removal request sent successfully."
     elif [[ "$response" == *"Forbidden"* ]]; then
         log_message "ERROR: Torrent removal FAILED with 'Forbidden'."
-        log_message "ACTION REQUIRED: Go to qBittorrent Settings -> Web UI -> Authentication."
-        log_message "Ensure 'Bypass authentication for clients on localhost' is CHECKED and Saved."
-        log_message "Response details: $response"
+        log_message "Attempting fallback login with default credentials (admin/adminadmin)..."
+
+        # Cookie file for session
+        local cookie_file="/tmp/qbit_cookie_$(date +%s).txt"
+
+        # Try to login
+        local login_response=$(curl -s -i \
+            -H "Referer: http://127.0.0.1:8080" \
+            -H "Origin: http://127.0.0.1:8080" \
+            -c "$cookie_file" \
+            -d "username=admin&password=adminadmin" \
+            "http://127.0.0.1:8080/api/v2/auth/login")
+
+        if [[ "$login_response" == *"Ok."* ]] || [[ "$login_response" == *"200 OK"* ]]; then
+            log_message "Login successful. Retrying torrent removal..."
+
+            local retry_response=$(curl -s -X POST \
+                -b "$cookie_file" \
+                -H "Referer: http://127.0.0.1:8080" \
+                -H "Origin: http://127.0.0.1:8080" \
+                -d "hashes=$TORRENT_HASH" \
+                -d "deleteFiles=true" \
+                "http://127.0.0.1:8080/api/v2/torrents/delete")
+
+            if [ -z "$retry_response" ]; then
+                log_message "Torrent removal request sent successfully (via fallback login)."
+            else
+                log_message "Retry failed. Response: $retry_response"
+            fi
+
+            rm -f "$cookie_file"
+        else
+            log_message "Fallback login failed. Please ensure 'Bypass authentication for clients on localhost' is CHECKED in qBittorrent settings."
+            log_message "Login response: $login_response"
+        fi
     else
         log_message "Torrent removal response: $response"
     fi
