@@ -240,7 +240,7 @@ Example: `http://<YOUR_VM_IP>:7575` (Homarr Dashboard).
 5.  **CHECK the box**: "Run on torrent finished".
 6.  **PASTE this exact command** in the text box:
     ```bash
-    /scripts/qbit_manage.sh "%N" "%F" "%L"
+    /bin/bash /scripts/qbit_manage.sh "%N" "%F" "%L"
     ```
 7.  Click **Save** at the bottom.
 
@@ -621,6 +621,8 @@ cat logs/qbit_postprocess.log
 If you see **"Permission denied"** or if the file is **empty/missing**, it means the container cannot write to the logs folder.
 
 **The Fix:**
+*Note: The `deploy.sh` script does this automatically. Only do this if you installed manually.*
+
 Run this command in your main project folder:
 ```bash
 chmod -R 777 logs/
