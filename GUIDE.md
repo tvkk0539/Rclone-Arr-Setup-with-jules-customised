@@ -235,16 +235,28 @@ Example: `http://<YOUR_VM_IP>:7575` (Homarr Dashboard).
 
 1.  Go to `http://<YOUR_VM_IP>:8080`.
 2.  Login: `admin` / `adminadmin`.
-3.  Go to **Tools** (Gear Icon) -> **Options** -> **Downloads**.
-4.  Scroll to the bottom to **"Run external program"**.
-5.  **CHECK the box**: "Run on torrent finished".
-6.  **PASTE this exact command** in the text box:
-    ```bash
-    /bin/bash /scripts/qbit_manage.sh "%N" "%F" "%L"
-    ```
-7.  Click **Save** at the bottom.
+3.  **Enable Localhost Access** (Required for auto-cleanup):
+    *   Go to **Options** -> **Web UI**.
+    *   Scroll down to "Authentication".
+    *   **CHECK the box**: `Bypass authentication for clients on localhost`.
+    *   *Why? This allows the script to safely delete the torrent after uploading.*
 
-*Note: This tells qBittorrent to "Wake up" our script every time a download finishes.*
+4.  **Set Up the Script**:
+    *   Go to **Options** -> **Downloads**.
+    *   Scroll to the bottom to **"Run external program"**.
+    *   **CHECK the box**: "Run on torrent finished".
+    *   **PASTE this exact command** in the text box:
+        ```bash
+        /bin/bash /scripts/qbit_manage.sh "%N" "%F" "%L" "%I"
+        ```
+        *(Note: The `"%I"` at the end is very important!)*
+
+5.  **Important Note on Seeding Limits**:
+    *   **Do NOT** set "Seeding Limits" to "Remove torrent" in the settings.
+    *   You can set them to "Pause torrent" or "Stop torrent" if you like (e.g., Ratio 0), but **let the script handle the removal**.
+    *   The script will automatically remove the torrent only *after* a successful upload.
+
+6.  Click **Save** at the bottom.
 
 ### Step D: Configure Jellyfin (The Streamer)
 
