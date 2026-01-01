@@ -241,14 +241,18 @@ docker compose logs qbittorrent | grep -i password
 ```
 Copy that password (e.g., `pGTRKcuUS`) and use it to log in as `admin`.
 
-**Then, perform these One-Time Fixes:**
+**Then, perform these One-Time Fixes (The Easiest Way):**
 
 1.  Go to **Tools** (Gear Icon) -> **Options** -> **Web UI**.
 2.  **Authentication**:
     *   Change the password to something permanent (e.g., `adminadmin`).
     *   **CHECK the box**: `Bypass authentication for clients on localhost`.
-    *   *(This is crucial! It allows our script to delete torrents automatically without login errors.)*
 3.  Scroll down and click **Save**.
+
+**Why do this manually?**
+*   **It stops the random passwords:** Once you save this, qBittorrent stops generating temporary passwords on every restart.
+*   **It fixes automation forever:** By checking "Bypass localhost", the cleanup script (running inside the container) can delete torrents instantly without needing to know your password.
+*   **Why not a script?** Pre-setting the password via script is complex (it requires PBKDF2 encryption). Doing it manually takes 30 seconds and solves the problem permanently.
 
 **Now, Set Up the Script:**
     *   Go to **Options** -> **Downloads**.
