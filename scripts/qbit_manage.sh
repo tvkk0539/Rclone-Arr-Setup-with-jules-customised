@@ -151,12 +151,21 @@ remove_torrent_from_client() {
         # Cookie file for session
         local cookie_file="/tmp/qbit_cookie_$(date +%s).txt"
 
-        # PRIORITY 1: Check for temporary password in logs (to avoid IP ban from failed attempts)
-        # Search in /config (application logs) AND /logs (in case user mapped it differently)
-        local temp_pass=$(grep -r "A temporary password is provided for this session:" /config /logs 2>/dev/null | tail -n 1 | awk -F ': ' '{print $NF}' | tr -d '[:space:]')
+        # PRIORITY 1: Check if user provided QBIT_PASSWORD in .env
+        local temp_pass=""
+        if [ ! -z "$QBIT_PASSWORD" ]; then
+            log_message "Using QBIT_PASSWORD from environment variable."
+            temp_pass="$QBIT_PASSWORD"
+        else
+            # Search in /config (application logs) AND /logs (in case user mapped it differently)
+            temp_pass=$(grep -r "A temporary password is provided for this session:" /config /logs 2>/dev/null | tail -n 1 | awk -F ': ' '{print $NF}' | tr -d '[:space:]')
+            if [ ! -z "$temp_pass" ]; then
+                 log_message "Found temporary password in logs: $temp_pass."
+            fi
+        fi
 
         if [ ! -z "$temp_pass" ]; then
-            log_message "Found temporary password in logs: $temp_pass. Attempting login..."
+            log_message "Attempting login with detected/provided password..."
 
             local temp_login_response=$(curl -s -i \
                 -H "Referer: http://127.0.0.1:8080" \
@@ -167,7 +176,7 @@ remove_torrent_from_client() {
 
             # Strictly check for "Ok." in body to confirm success. "200 OK" header is not enough as qBit returns it on failure too.
             if [[ "$temp_login_response" == *"Ok."* ]]; then
-                 log_message "Temporary password login successful. Retrying torrent removal..."
+                 log_message "Password login successful. Retrying torrent removal..."
 
                  local retry_response=$(curl -s -X POST \
                     -b "$cookie_file" \
@@ -178,14 +187,14 @@ remove_torrent_from_client() {
                     "http://127.0.0.1:8080/api/v2/torrents/delete")
 
                 if [ -z "$retry_response" ]; then
-                    log_message "Torrent removal request sent successfully (via temporary password)."
+                    log_message "Torrent removal request sent successfully."
                     rm -f "$cookie_file"
                     return
                 else
-                    log_message "Retry failed with temp password. Response: $retry_response"
+                    log_message "Retry failed. Response: $retry_response"
                 fi
             else
-                log_message "Login with temporary password failed."
+                log_message "Login with password failed."
             fi
         fi
 
