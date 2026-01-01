@@ -613,6 +613,16 @@ If nothing works, we can delete the config file to reset the password to default
     ```
 4.  Login with `admin` / `adminadmin`.
 
+### Problem 8: qBittorrent "IP Address Banned"
+If you see **"Your IP address has been banned after too many failed authentication attempts"**:
+*   **Cause**: You typed the wrong password too many times.
+*   **Fix**: Follow the steps in **Problem 6** (The "Nuclear" Reset). Deleting the config file clears the ban list and resets the password to default (`adminadmin`).
+
+### Problem 8: qBittorrent "IP Address Banned"
+If you see **"Your IP address has been banned after too many failed authentication attempts"**:
+*   **Cause**: You typed the wrong password too many times.
+*   **Fix**: Follow the steps in **Problem 6** (The "Nuclear" Reset). Deleting the config file clears the ban list and resets the password to default (`adminadmin`).
+
 ### Problem 7: Uploads Stuck (Permission Denied)
 If your downloads finish but don't upload, check the logs:
 ```bash
