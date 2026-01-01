@@ -258,6 +258,22 @@ Copy that password (e.g., `pGTRKcuUS`) and use it to log in as `admin`.
 *   **It stops the random passwords:** Once you save a manual password, qBittorrent stops generating random temporary ones on restart.
 *   **It is permanent:** Do this once, and it works forever.
 
+### Step C.1: Fix the Mobile Display (VueTorrent)
+If your download list looks empty or broken on your phone, it is because the default interface is not mobile-friendly.
+We have already installed a beautiful mobile theme for you. You just need to turn it on.
+
+1.  Go to **Tools** -> **Options** -> **Web UI**.
+2.  Check the box **"Use alternative Web UI"**.
+3.  **Files location**: Type exactly:
+    ```
+    /vuetorrent
+    ```
+    *(Note: Do NOT check "Files are in ZIP archive" unless you downloaded a zip manually).*
+4.  Scroll down and click **Save**.
+5.  Refresh the page. You will see a modern, dark-mode interface that works perfectly on phones!
+
+**Note:** If you ever get locked out (white screen), you can fix it by editing the config file manually or clearing browser cache.
+
 **Now, Set Up the Script:**
     *   Go to **Options** -> **Downloads**.
     *   Scroll to the bottom to **"Run external program"**.
