@@ -12,6 +12,7 @@ services:
       - RCLONE_REMOTE=${RCLONE_REMOTE}
       - RCLONE_USER=${RCLONE_USER}
       - RCLONE_PASS=${RCLONE_PASS}
+      - QBIT_PASSWORD=${QBIT_PASSWORD}
     volumes:
       - ${MEDIA_SERVER_ROOT}/configs:/config  # dont add qBittorrent in host folder - qbit automatically creates one
       - ${DOWNLOADS_FOLDER}:/downloads
