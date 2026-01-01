@@ -409,9 +409,10 @@ Use this list to know which port does what, and copy the code below to open them
 | **Radarr** | `7878` | **Movie Manager**. Settings for movies. |
 | **qBittorrent** | `8080` | **Downloader**. See download progress. |
 | **Prowlarr** | `9696` | **Indexer Manager**. Connects torrent sites. |
-| **Aria2** | `6880` | **Alternative Downloader** (AriaNg UI). |
+| **AriaNg** | `6880` | **Aria2 Dashboard**. Open this to see downloads. |
+| **Aria2 RPC** | `6800` | **Backend API**. Do NOT open in browser (used internally). |
 | **Rclone WebUI** | `5572` | **Cloud Manager**. See your Google Drive files. |
-| **Profilarr** | `5060` | **Profile Manager**. Advanced settings. |
+| **Profilarr** | `6868` | **Profile Manager**. Advanced settings. |
 
 ### GCP Firewall Command
 When creating your Firewall Rule in Google Cloud Console:
@@ -420,8 +421,21 @@ When creating your Firewall Rule in Google Cloud Console:
 3.  **Source ranges**: `0.0.0.0/0`
 4.  **Protocols and ports**: Paste exactly this list:
     ```
-    7575,8096,5055,7878,8080,9696,6880,5572,5060
+    7575,8096,5055,7878,8080,9696,6880,5572,6868
     ```
+
+---
+
+## 17. Connecting AriaNg (Authentication Error Fix)
+
+If you open AriaNg (`:6880`) and see "Authentication Failed" or "Disconnected":
+
+1.  **Find your Secret**: Run `cat .env` in your terminal. Copy the `RPC_SECRET`.
+2.  **Open AriaNg Settings**:
+    *   Click the **AriaNg Settings** tab (or "Aria2 RPC").
+    *   Find the field **"Aria2 RPC Secret Token"**.
+    *   **Paste** your secret key there.
+3.  **Reload**: Refresh the page. It should now say "Connected".
 
 ---
 

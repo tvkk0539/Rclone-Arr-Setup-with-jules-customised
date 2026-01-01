@@ -139,7 +139,7 @@ services:
     environment:
       - TZ=Asia/Kolkata
     ports:
-      - 5060:5060
+      - 6868:6868
     restart: unless-stopped
    
 networks:
