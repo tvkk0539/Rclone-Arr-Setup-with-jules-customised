@@ -133,6 +133,7 @@ mkdir -p configs/aria2
 mkdir -p configs/radarr
 mkdir -p configs/prowlarr
 mkdir -p configs/qbittorrent
+     mkdir -p configs/aria2
 mkdir -p configs/homarr
 mkdir -p configs/jellyfin
 mkdir -p logs
@@ -145,6 +146,32 @@ chown -R "$CURRENT_USER:$CURRENT_USER" configs logs scripts
 # Fix Log Permissions (Crucial for Docker containers running as non-root)
 # qBittorrent (user 1000) needs to write to this folder
 chmod -R 777 logs
+
+ # Ensure Aria2 config exists with the correct hook
+ if [ ! -f configs/aria2/aria2.conf ]; then
+     echo "Creating default Aria2 config..."
+     cat <<EOF > configs/aria2/aria2.conf
+dir=/downloads
+rpc-secret=${RPC_SECRET}
+enable-rpc=true
+rpc-listen-all=true
+rpc-listen-port=6800
+rpc-allow-origin-all=true
+on-download-complete=/scripts/aria_manage.sh
+input-file=/config/aria2.session
+save-session=/config/aria2.session
+save-session-interval=60
+force-save=true
+log=/logs/aria2.log
+log-level=notice
+EOF
+ else
+     # Update existing config if hook is missing
+     if ! grep -q "on-download-complete" configs/aria2/aria2.conf; then
+         echo "on-download-complete=/scripts/aria_manage.sh" >> configs/aria2/aria2.conf
+         echo "Updated Aria2 config with automation hook."
+     fi
+ fi
 
 # 6. Rclone Config Setup
 echo -e "\n${GREEN}[5/7] Setting up Rclone Config...${NC}"
