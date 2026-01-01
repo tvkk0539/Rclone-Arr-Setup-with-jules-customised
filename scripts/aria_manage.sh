@@ -4,7 +4,7 @@
 # Save this as .sh and make it executable with chmod +x
 
 
-RCLONE_REMOTE="${RCLONE_REMOTE}/UnSorted"
+RCLONE_REMOTE="${RCLONE_REMOTE}:/UnSorted"
 COMPLETED_DIR="/downloads/aria_downloads"    # Directory where completed downloads go (seperate folder for radarr to watch)
 RCLONE_HTTP_URL="http://rclone:5572"   # rclone HTTP API URL
 RCLONE_USER="${RCLONE_USER}"
