@@ -549,6 +549,31 @@ When you created the Google Firewall rule, go back and check the **"Targets"** s
 *   **Correct**: `All instances in the network`
 *   **Incorrect**: `Specified target tags` (If you chose this, the rule is active but **not applying to your VM**!)
 
+### Problem 5: Extreme Firewall Troubleshooting (The "Nuclear Option")
+If you have done **everything** and it still won't connect, Google Cloud's firewall might be tricky.
+
+**Try creating an "Allow All" Rule (Just for testing):**
+1.  Go to **VPC Network** -> **Firewall**.
+2.  Click **Create Firewall Rule**.
+3.  **Name**: `allow-all-test`.
+4.  **Targets**: `All instances in the network`.
+5.  **Source IPv4 ranges**: `0.0.0.0/0`.
+6.  **Protocols and ports**: Select **Allow all**.
+7.  Click **Create**.
+
+**Test it:** Wait 1 minute and try accessing `http://<EXTERNAL_IP>:7575` again.
+
+*   **If this works**: It means your previous rule had a typo or the wrong "Network" selected. Delete this rule and fix the specific one.
+*   **If this does NOT work**: The issue is inside your VM (e.g., `ufw` firewall is on, or the app is binding to localhost).
+
+**Check for Localhost Binding:**
+Run this inside your VM:
+```bash
+sudo netstat -tulpn | grep 7575
+```
+*   **Good**: `0.0.0.0:7575` (Listening on all interfaces)
+*   **Bad**: `127.0.0.1:7575` (Listening only inside the VM)
+
 ---
 
 ## 16. File Locations (Where is everything?)
