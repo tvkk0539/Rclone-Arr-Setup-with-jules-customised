@@ -147,12 +147,49 @@ remove_torrent_from_client() {
         log_message "Torrent removal request sent successfully."
     elif [[ "$response" == *"Forbidden"* ]]; then
         log_message "ERROR: Torrent removal FAILED with 'Forbidden'."
-        log_message "Attempting fallback login with default credentials (admin/adminadmin)..."
 
         # Cookie file for session
         local cookie_file="/tmp/qbit_cookie_$(date +%s).txt"
 
-        # Try to login
+        # PRIORITY 1: Check for temporary password in logs (to avoid IP ban from failed attempts)
+        local temp_pass=$(grep -r "A temporary password is provided for this session:" /logs | tail -n 1 | awk -F ': ' '{print $NF}' | tr -d '[:space:]')
+
+        if [ ! -z "$temp_pass" ]; then
+            log_message "Found temporary password in logs: $temp_pass. Attempting login..."
+
+            local temp_login_response=$(curl -s -i \
+                -H "Referer: http://127.0.0.1:8080" \
+                -H "Origin: http://127.0.0.1:8080" \
+                -c "$cookie_file" \
+                -d "username=admin&password=$temp_pass" \
+                "http://127.0.0.1:8080/api/v2/auth/login")
+
+            if [[ "$temp_login_response" == *"Ok."* ]] || [[ "$temp_login_response" == *"200 OK"* ]]; then
+                 log_message "Temporary password login successful. Retrying torrent removal..."
+
+                 local retry_response=$(curl -s -X POST \
+                    -b "$cookie_file" \
+                    -H "Referer: http://127.0.0.1:8080" \
+                    -H "Origin: http://127.0.0.1:8080" \
+                    -d "hashes=$TORRENT_HASH" \
+                    -d "deleteFiles=true" \
+                    "http://127.0.0.1:8080/api/v2/torrents/delete")
+
+                if [ -z "$retry_response" ]; then
+                    log_message "Torrent removal request sent successfully (via temporary password)."
+                    rm -f "$cookie_file"
+                    return
+                else
+                    log_message "Retry failed with temp password. Response: $retry_response"
+                fi
+            else
+                log_message "Login with temporary password failed."
+            fi
+        fi
+
+        # PRIORITY 2: Fallback to default credentials if no temp password or temp login failed
+        log_message "Attempting fallback login with default credentials (admin/adminadmin)..."
+
         local login_response=$(curl -s -i \
             -H "Referer: http://127.0.0.1:8080" \
             -H "Origin: http://127.0.0.1:8080" \
@@ -161,7 +198,7 @@ remove_torrent_from_client() {
             "http://127.0.0.1:8080/api/v2/auth/login")
 
         if [[ "$login_response" == *"Ok."* ]] || [[ "$login_response" == *"200 OK"* ]]; then
-            log_message "Login successful. Retrying torrent removal..."
+            log_message "Default login successful. Retrying torrent removal..."
 
             local retry_response=$(curl -s -X POST \
                 -b "$cookie_file" \
@@ -172,54 +209,16 @@ remove_torrent_from_client() {
                 "http://127.0.0.1:8080/api/v2/torrents/delete")
 
             if [ -z "$retry_response" ]; then
-                log_message "Torrent removal request sent successfully (via fallback login)."
+                log_message "Torrent removal request sent successfully (via default credentials)."
             else
                 log_message "Retry failed. Response: $retry_response"
             fi
-
-            rm -f "$cookie_file"
         else
-            log_message "Default login failed. Attempting to retrieve temporary password from logs..."
-
-            # Try to find temporary password in qBittorrent logs
-            # Usually in /logs/qbittorrent/qBittorrent.log or similar, but mapped to /logs in container
-            # We search recursively in /logs just in case
-            local temp_pass=$(grep -r "A temporary password is provided for this session:" /logs | tail -n 1 | awk -F ': ' '{print $NF}' | tr -d '[:space:]')
-
-            if [ ! -z "$temp_pass" ]; then
-                log_message "Found temporary password: $temp_pass. Retrying login..."
-
-                local temp_login_response=$(curl -s -i \
-                    -H "Referer: http://127.0.0.1:8080" \
-                    -H "Origin: http://127.0.0.1:8080" \
-                    -c "$cookie_file" \
-                    -d "username=admin&password=$temp_pass" \
-                    "http://127.0.0.1:8080/api/v2/auth/login")
-
-                if [[ "$temp_login_response" == *"Ok."* ]] || [[ "$temp_login_response" == *"200 OK"* ]]; then
-                     log_message "Temporary password login successful. Retrying torrent removal..."
-
-                     local retry_response=$(curl -s -X POST \
-                        -b "$cookie_file" \
-                        -H "Referer: http://127.0.0.1:8080" \
-                        -H "Origin: http://127.0.0.1:8080" \
-                        -d "hashes=$TORRENT_HASH" \
-                        -d "deleteFiles=true" \
-                        "http://127.0.0.1:8080/api/v2/torrents/delete")
-
-                    if [ -z "$retry_response" ]; then
-                        log_message "Torrent removal request sent successfully (via temporary password)."
-                    else
-                        log_message "Retry failed. Response: $retry_response"
-                    fi
-                else
-                    log_message "Login with temporary password failed."
-                fi
-            else
-                log_message "Could not find temporary password in logs. Please ensure 'Bypass authentication for clients on localhost' is CHECKED in qBittorrent settings."
-            fi
-             rm -f "$cookie_file"
+            log_message "All login attempts failed. Please ensure 'Bypass authentication for clients on localhost' is CHECKED in qBittorrent settings."
+            log_message "Login response: $login_response"
         fi
+
+        rm -f "$cookie_file"
     else
         log_message "Torrent removal response: $response"
     fi
