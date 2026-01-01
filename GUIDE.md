@@ -613,6 +613,20 @@ If nothing works, we can delete the config file to reset the password to default
     ```
 4.  Login with `admin` / `adminadmin`.
 
+### Problem 7: Uploads Stuck (Permission Denied)
+If your downloads finish but don't upload, check the logs:
+```bash
+cat logs/qbit_postprocess.log
+```
+If you see **"Permission denied"** or if the file is **empty/missing**, it means the container cannot write to the logs folder.
+
+**The Fix:**
+Run this command in your main project folder:
+```bash
+chmod -R 777 logs/
+```
+This gives the container permission to write the log file, which allows the script to run.
+
 ---
 
 ## 16. File Locations (Where is everything?)

@@ -142,6 +142,10 @@ mkdir -p scripts
 chmod +x scripts/*.sh 2>/dev/null || true
 chown -R "$CURRENT_USER:$CURRENT_USER" configs logs scripts
 
+# Fix Log Permissions (Crucial for Docker containers running as non-root)
+# qBittorrent (user 1000) needs to write to this folder
+chmod -R 777 logs
+
 # 6. Rclone Config Setup
 echo -e "\n${GREEN}[5/7] Setting up Rclone Config...${NC}"
 CONFIG_FILE="configs/rclone/rclone.conf"

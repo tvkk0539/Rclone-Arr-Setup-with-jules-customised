@@ -57,6 +57,9 @@ Always check the logs!
 cat logs/qbit_postprocess.log
 ```
 
-*   **Empty file?** -> The script never ran (Check qBittorrent settings!).
+*   **Empty file or Missing?** -> The script never ran.
+    *   Check qBittorrent settings (Is the box checked?).
+    *   Check Permissions: Run `chmod -R 777 logs/`.
+*   **"Permission denied"?** -> Run `chmod -R 777 logs/`.
 *   **"Upload Successful"?** -> It worked!
 *   **"Error"?** -> Check if your Rclone config is correct.
