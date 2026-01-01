@@ -15,12 +15,14 @@ RCLONE_PASS="${RCLONE_PASS}"
 # %F - Content path (directory for multi-file torrents, file path for single-file)
 # %D - Save directory
 # %L - Categories
+# %I - Info Hash
 
-# so use ->  qbit_manage.sh "%N" "%F" "%L"      in qbit script run field
+# so use ->  qbit_manage.sh "%N" "%F" "%L" "%I"     in qbit script run field
 
 TORRENT_NAME="$1"
 CONTENT_PATH="$2"
 TORRENT_CATEGORY="$3"
+TORRENT_HASH="$4"
 
 LOG_FILE="/logs/qbit_postprocess.log"
 
@@ -109,12 +111,40 @@ EOF
         # Check if response contains error
         if echo "$response" | grep -q '"error"'; then
             log_message "Rclone move failed with error: $response"
+            return 1
         else
             log_message "Rclone move completed successfully"
+            return 0
         fi
     else
         log_message "Failed to connect to rclone HTTP API. curl exit code: $curl_exit_code"
         log_message "Response: $response"
+        return 1
+    fi
+}
+
+remove_torrent_from_client() {
+    if [ -z "$TORRENT_HASH" ]; then
+        log_message "Torrent hash not provided. Skipping qBittorrent removal."
+        return
+    fi
+
+    log_message "Removing torrent from qBittorrent: $TORRENT_NAME (Hash: $TORRENT_HASH)"
+
+    # qBittorrent API: /api/v2/torrents/delete
+    # Parameters: hashes (string), deleteFiles (bool)
+    # We use deleteFiles=true to ensure cleanup, though rclone should have moved them.
+    # We use localhost:8080 because we asked user to bypass auth.
+
+    local response=$(curl -s -X POST \
+        -d "hashes=$TORRENT_HASH" \
+        -d "deleteFiles=true" \
+        "http://localhost:8080/api/v2/torrents/delete")
+
+    if [ -z "$response" ]; then
+        log_message "Torrent removal request sent successfully."
+    else
+        log_message "Torrent removal response: $response"
     fi
 }
 
@@ -166,13 +196,17 @@ cleanup_empty_folder() {
 
 
 
-run_rclone_move "$CONTENT_PATH"
+if run_rclone_move "$CONTENT_PATH"; then
+    sleep 5
+    remove_torrent_from_client
+    sleep 300 # helpfull for smaller files
 
-sleep 300 # helpfull for smaller files
-
-if [ -d "$CONTENT_PATH" ]; then
-    log_message "Running background cleanup for $CONTENT_PATH"
-    cleanup_empty_folder "$CONTENT_PATH" &
+    if [ -d "$CONTENT_PATH" ]; then
+        log_message "Running background cleanup for $CONTENT_PATH"
+        cleanup_empty_folder "$CONTENT_PATH" &
+    fi
+else
+    log_message "Rclone move failed. Skipping torrent removal to prevent data loss."
 fi
 
 
