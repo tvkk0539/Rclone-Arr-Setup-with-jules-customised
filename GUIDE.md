@@ -233,15 +233,24 @@ Example: `http://<YOUR_VM_IP>:7575` (Homarr Dashboard).
 ### Step C: Configure qBittorrent (CRITICAL STEP)
 ⚠️ **If you skip this, your downloads will NEVER upload to the cloud!** ⚠️
 
-1.  Go to `http://<YOUR_VM_IP>:8080`.
-2.  Login: `admin` / `adminadmin`.
-3.  **Enable Localhost Access** (Required for auto-cleanup):
-    *   Go to **Options** -> **Web UI**.
-    *   Scroll down to "Authentication".
-    *   **CHECK the box**: `Bypass authentication for clients on localhost`.
-    *   *Why? This allows the script to safely delete the torrent after uploading.*
+**First-Time Login Note:**
+qBittorrent generates a random temporary password on the first run.
+To find it, run this command in your terminal:
+```bash
+docker compose logs qbittorrent | grep -i password
+```
+Copy that password (e.g., `pGTRKcuUS`) and use it to log in as `admin`.
 
-4.  **Set Up the Script**:
+**Then, perform these One-Time Fixes:**
+
+1.  Go to **Tools** (Gear Icon) -> **Options** -> **Web UI**.
+2.  **Authentication**:
+    *   Change the password to something permanent (e.g., `adminadmin`).
+    *   **CHECK the box**: `Bypass authentication for clients on localhost`.
+    *   *(This is crucial! It allows our script to delete torrents automatically without login errors.)*
+3.  Scroll down and click **Save**.
+
+**Now, Set Up the Script:**
     *   Go to **Options** -> **Downloads**.
     *   Scroll to the bottom to **"Run external program"**.
     *   **CHECK the box**: "Run on torrent finished".
@@ -630,10 +639,12 @@ If you see **"Your IP address has been banned after too many failed authenticati
 *   **Cause**: You typed the wrong password too many times.
 *   **Fix**: Follow the steps in **Problem 6** (The "Nuclear" Reset). Deleting the config file clears the ban list and resets the password to default (`adminadmin`).
 
-### Problem 8: qBittorrent "IP Address Banned"
-If you see **"Your IP address has been banned after too many failed authentication attempts"**:
-*   **Cause**: You typed the wrong password too many times.
-*   **Fix**: Follow the steps in **Problem 6** (The "Nuclear" Reset). Deleting the config file clears the ban list and resets the password to default (`adminadmin`).
+### Problem 9: Script Cleanup Loop ("Forbidden" Errors)
+If your logs show repeated "Forbidden" errors even after restarts:
+1.  **Check your .env**: You can manually override the password for the script.
+2.  Add this line to `.env`: `QBIT_PASSWORD=your_current_password`.
+3.  Restart qBittorrent: `docker compose up -d qbittorrent`.
+*(This is an advanced fallback if the auto-detection fails).*
 
 ### Problem 7: Uploads Stuck (Permission Denied)
 If your downloads finish but don't upload, check the logs:
