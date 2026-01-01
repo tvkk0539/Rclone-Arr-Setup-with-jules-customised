@@ -134,15 +134,22 @@ remove_torrent_from_client() {
     # qBittorrent API: /api/v2/torrents/delete
     # Parameters: hashes (string), deleteFiles (bool)
     # We use deleteFiles=true to ensure cleanup, though rclone should have moved them.
-    # We use localhost:8080 because we asked user to bypass auth.
+    # We use 127.0.0.1 to avoid IPv6 issues and add Referer/Origin to satisfy CSRF checks.
 
     local response=$(curl -s -X POST \
+        -H "Referer: http://127.0.0.1:8080" \
+        -H "Origin: http://127.0.0.1:8080" \
         -d "hashes=$TORRENT_HASH" \
         -d "deleteFiles=true" \
-        "http://localhost:8080/api/v2/torrents/delete")
+        "http://127.0.0.1:8080/api/v2/torrents/delete")
 
     if [ -z "$response" ]; then
         log_message "Torrent removal request sent successfully."
+    elif [[ "$response" == *"Forbidden"* ]]; then
+        log_message "ERROR: Torrent removal FAILED with 'Forbidden'."
+        log_message "ACTION REQUIRED: Go to qBittorrent Settings -> Web UI -> Authentication."
+        log_message "Ensure 'Bypass authentication for clients on localhost' is CHECKED and Saved."
+        log_message "Response details: $response"
     else
         log_message "Torrent removal response: $response"
     fi
