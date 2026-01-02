@@ -48,6 +48,14 @@ log_message "Processing download: $DOWNLOAD_NAME (GID: $GID)"
 log_message "File count: $FILE_COUNT"
 log_message "Download path: $DOWNLOAD_PATH"
 
+# Check for empty path (Metadata download or error)
+if [ -z "$DOWNLOAD_PATH" ] || [ "$FILE_COUNT" -eq 0 ]; then
+    log_message "Download path is empty or file count is 0. Likely metadata/magnet resolution."
+    log_message "Skipping rclone move."
+    log_message "----------------------------------------"
+    exit 0
+fi
+
 
 
 is_media() {
