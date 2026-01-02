@@ -84,6 +84,9 @@ services:
       - SYS_ADMIN
     security_opt:
       - apparmor:unconfined
+
+    # --- OPTION 1: High Performance (Recommended for smooth playback) ---
+    # Uses disk cache to prevent buffering. Higher CPU/Disk usage.
     command: >
       mount ${RCLONE_REMOTE}: /data/mount
       --allow-other
@@ -93,6 +96,17 @@ services:
       --vfs-cache-max-size 10G
       --vfs-cache-max-age 12h
       --config /config/rclone/rclone.conf
+
+    # --- OPTION 2: Low Resource (Friend's suggestion) ---
+    # Saves CPU/RAM/Disk. May buffer more often. Good for small VPS.
+    # To use: Comment out Option 1 above (add #), and uncomment Option 2 below (remove #).
+    # command: >
+    #   mount ${RCLONE_REMOTE}: /data/mount
+    #   --allow-other
+    #   --vfs-cache-mode writes
+    #   --read-only
+    #   --config /config/rclone/rclone.conf
+
     volumes:
       - ${MEDIA_SERVER_ROOT}/configs/rclone:/config/rclone
       - ${MEDIA_SERVER_ROOT}/mount:/data/mount:shared
