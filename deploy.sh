@@ -136,6 +136,7 @@ mkdir -p configs/qbittorrent
 mkdir -p configs/aria2
 mkdir -p configs/homarr
 mkdir -p configs/jellyfin
+mkdir -p mount
 mkdir -p logs
 mkdir -p scripts
 
@@ -229,7 +230,7 @@ fi
 
 # Service Selection Logic
 CORE_SERVICES="rclone"
-OPTIONAL_SERVICES=("homarr" "radarr" "prowlarr" "qbittorrent" "aria2" "ariang" "jellyseerr" "profilarr")
+OPTIONAL_SERVICES=("homarr" "radarr" "prowlarr" "qbittorrent" "aria2" "ariang" "jellyseerr" "profilarr" "jellyfin")
 
 echo -e "\n${BLUE}Installation Mode:${NC}"
 echo "1) Full Installation (Install Everything)"
@@ -269,6 +270,12 @@ if [ "$INSTALL_MODE" == "2" ]; then
         fi
     done
 
+    # Auto-include mount if jellyfin is selected
+    if [[ "$SERVICES_TO_RUN" == *"jellyfin"* ]]; then
+         SERVICES_TO_RUN="$SERVICES_TO_RUN mount"
+         echo -e "${GREEN}Auto-enabling Rclone Mount (Required for Jellyfin)${NC}"
+    fi
+
     echo -e "\nStarting specific services: $SERVICES_TO_RUN"
     docker compose up -d $SERVICES_TO_RUN
 
@@ -303,6 +310,12 @@ elif [ "$INSTALL_MODE" == "3" ]; then
             echo -e "${RED}Skipping $SERVICE_NAME${NC}"
         fi
     done
+
+    # Auto-include mount if jellyfin is selected
+    if [[ "$SERVICES_TO_RUN" == *"jellyfin"* ]]; then
+         SERVICES_TO_RUN="$SERVICES_TO_RUN mount"
+         echo -e "${GREEN}Auto-enabling Rclone Mount (Required for Jellyfin)${NC}"
+    fi
 
     echo -e "\nStarting specific services: $SERVICES_TO_RUN"
     docker compose up -d $SERVICES_TO_RUN

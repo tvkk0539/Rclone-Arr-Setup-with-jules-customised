@@ -73,7 +73,47 @@ services:
       - 5572:5572
     restart: unless-stopped
 
-    
+  mount:
+    image: rclone/rclone:latest
+    container_name: mount
+    environment:
+      - RCLONE_REMOTE=${RCLONE_REMOTE}
+    devices:
+      - /dev/fuse:/dev/fuse
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+    command: >
+      mount ${RCLONE_REMOTE}: /data/mount
+      --allow-other
+      --dir-cache-time 1000h
+      --poll-interval 10s
+      --vfs-cache-mode full
+      --vfs-cache-max-size 10G
+      --vfs-cache-max-age 12h
+      --config /config/rclone/rclone.conf
+    volumes:
+      - ${MEDIA_SERVER_ROOT}/configs/rclone:/config/rclone
+      - ${MEDIA_SERVER_ROOT}/mount:/data/mount:shared
+    restart: unless-stopped
+
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Kolkata
+    volumes:
+      - ${MEDIA_SERVER_ROOT}/configs/jellyfin:/config
+      - ${MEDIA_SERVER_ROOT}/mount:/data/mount:rslave
+    ports:
+      - 8096:8096
+    depends_on:
+      - mount
+    restart: unless-stopped
+
   radarr:
     image: lscr.io/linuxserver/radarr:latest
     container_name: radarr
