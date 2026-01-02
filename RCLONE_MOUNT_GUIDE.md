@@ -16,6 +16,7 @@ We have provided two different ways to mount your Cloud Drive to your server.
     command: >
       mount ${RCLONE_REMOTE}: /data/mount
       --allow-other
+      --allow-non-empty
       --dir-cache-time 1000h
       --poll-interval 10s
       --vfs-cache-mode full
@@ -41,6 +42,7 @@ We have provided two different ways to mount your Cloud Drive to your server.
     command: >
       mount ${RCLONE_REMOTE}: /data/mount
       --allow-other
+      --allow-non-empty
       --dir-cache-time 1000h
       --vfs-cache-mode writes
       --read-only
