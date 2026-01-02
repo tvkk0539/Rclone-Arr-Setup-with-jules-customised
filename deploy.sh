@@ -228,16 +228,17 @@ if ! docker network inspect nginx_network &>/dev/null; then
 fi
 
 # Service Selection Logic
-CORE_SERVICES="rclone homarr"
-OPTIONAL_SERVICES=("radarr" "prowlarr" "qbittorrent" "aria2" "ariang" "jellyseerr" "profilarr")
+CORE_SERVICES="rclone"
+OPTIONAL_SERVICES=("homarr" "radarr" "prowlarr" "qbittorrent" "aria2" "ariang" "jellyseerr" "profilarr")
 
 echo -e "\n${BLUE}Installation Mode:${NC}"
 echo "1) Full Installation (Install Everything)"
 echo "2) Custom Installation (Select apps to SKIP)"
+echo "3) Selective Installation (Select apps to INSTALL)"
 read -p "Select option [1]: " INSTALL_MODE
 
 if [ "$INSTALL_MODE" == "2" ]; then
-    echo -e "\n${YELLOW}Custom Installation Selected.${NC}"
+    echo -e "\n${YELLOW}Custom Installation (SKIP Mode).${NC}"
     echo "The following core services will ALWAYS be installed: $CORE_SERVICES"
     echo -e "\nSelect the apps you do NOT want to install:"
 
@@ -247,7 +248,7 @@ if [ "$INSTALL_MODE" == "2" ]; then
     done
 
     echo -e "\nEnter the numbers of the apps to SKIP (separated by space)."
-    echo "Example: To skip Radarr and Jellyfin, type: 1 7"
+    echo "Example: To skip Radarr and Homarr, type: 1 2"
     read -p "Skip apps: " SKIP_INDICES
 
     # Build list of services to run
@@ -265,6 +266,41 @@ if [ "$INSTALL_MODE" == "2" ]; then
         else
             SERVICES_TO_RUN="$SERVICES_TO_RUN $SERVICE_NAME"
             echo -e "${GREEN}Adding $SERVICE_NAME${NC}"
+        fi
+    done
+
+    echo -e "\nStarting specific services: $SERVICES_TO_RUN"
+    docker compose up -d $SERVICES_TO_RUN
+
+elif [ "$INSTALL_MODE" == "3" ]; then
+    echo -e "\n${YELLOW}Selective Installation (INCLUDE Mode).${NC}"
+    echo "The following core services will ALWAYS be installed: $CORE_SERVICES"
+    echo -e "\nSelect the apps you WANT to install:"
+
+    # List optional services
+    for i in "${!OPTIONAL_SERVICES[@]}"; do
+        echo "$((i+1)). ${OPTIONAL_SERVICES[$i]}"
+    done
+
+    echo -e "\nEnter the numbers of the apps to INSTALL (separated by space)."
+    echo "Example: To install only Homarr and qBittorrent, type: 1 4"
+    read -p "Install apps: " INCLUDE_INDICES
+
+    # Build list of services to run
+    SERVICES_TO_RUN="$CORE_SERVICES"
+
+    # Loop through all optional services
+    for i in "${!OPTIONAL_SERVICES[@]}"; do
+        SERVICE_NUM=$((i+1))
+        SERVICE_NAME="${OPTIONAL_SERVICES[$i]}"
+
+        # Check if this index was selected
+        # We add spaces around the list to match whole numbers (e.g. avoid matching '1' inside '10')
+        if [[ " $INCLUDE_INDICES " =~ " $SERVICE_NUM " ]]; then
+            SERVICES_TO_RUN="$SERVICES_TO_RUN $SERVICE_NAME"
+            echo -e "${GREEN}Adding $SERVICE_NAME${NC}"
+        else
+            echo -e "${RED}Skipping $SERVICE_NAME${NC}"
         fi
     done
 
@@ -291,6 +327,7 @@ echo -e "Jellyfin (Stream)  : http://$IP_ADDRESS:8096"
 echo -e "Jellyseerr (Request): http://$IP_ADDRESS:5055"
 echo -e "Radarr             : http://$IP_ADDRESS:7878"
 echo -e "qBittorrent        : http://$IP_ADDRESS:8080"
+echo -e "AriaNg (Aria2 UI)  : http://$IP_ADDRESS:6880"
 echo -e "Rclone WebUI       : http://$IP_ADDRESS:5572"
 echo -e "${BLUE}=================================================${NC}"
 echo -e "Login Credentials:"
