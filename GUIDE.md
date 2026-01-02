@@ -476,7 +476,7 @@ When creating your Firewall Rule in Google Cloud Console:
 
 ---
 
-## 17. Connecting AriaNg (Authentication Error Fix)
+## 13. Connecting AriaNg (Authentication Error Fix)
 
 If you open AriaNg (`:6880`) and see "Authentication Failed" or "Disconnected":
 
@@ -489,7 +489,7 @@ If you open AriaNg (`:6880`) and see "Authentication Failed" or "Disconnected":
 
 ---
 
-## 13. Finding Your Passwords & Keys
+## 14. Finding Your Passwords & Keys
 
 If you used the automated `deploy.sh` script, it generated some passwords for you (like the **Homarr Encryption Key** or **Aria2 Secret**).
 
@@ -513,7 +513,7 @@ Copy what you need from there!
 
 ---
 
-## 14. Troubleshooting: "Site Can't Be Reached"
+## 15. Troubleshooting: "Site Can't Be Reached"
 
 If you deployed everything successfully but your browser says **"This site can't be reached"**, it is usually one of two simple problems.
 
@@ -546,7 +546,7 @@ You must create the Firewall Rule mentioned in **Section 12**.
 
 ---
 
-## 15. Restarting & Updating
+## 16. Restarting & Updating
 
 If you need to restart your server or apply changes, be careful!
 
@@ -670,7 +670,16 @@ If your logs show repeated "Forbidden" errors even after restarts:
 3.  Restart qBittorrent: `docker compose up -d qbittorrent`.
 *(This is an advanced fallback if the auto-detection fails).*
 
-### Problem 7: Uploads Stuck (Permission Denied)
+### Problem 10: Jellyfin asks for Login immediately (No Wizard)
+If you open Jellyfin and it demands a username/password without letting you create one:
+1.  **Cause**: You might have old configuration files from a previous attempt.
+2.  **Fix**:
+    *   Stop Jellyfin: `docker compose stop jellyfin`
+    *   Delete the config: `rm -rf configs/jellyfin`
+    *   Start it again: `docker compose up -d jellyfin`
+    *   Refresh the page. The wizard should appear.
+
+### Problem 11: Uploads Stuck (Permission Denied)
 If your downloads finish but don't upload, check the logs:
 ```bash
 cat logs/qbit_postprocess.log
@@ -688,7 +697,7 @@ This gives the container permission to write the log file, which allows the scri
 
 ---
 
-## 16. File Locations (Where is everything?)
+## 17. File Locations (Where is everything?)
 
 It can be confusing to know where files are, because Docker "maps" folders.
 
