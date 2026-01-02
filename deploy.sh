@@ -133,7 +133,7 @@ mkdir -p configs/aria2
 mkdir -p configs/radarr
 mkdir -p configs/prowlarr
 mkdir -p configs/qbittorrent
-     mkdir -p configs/aria2
+mkdir -p configs/aria2
 mkdir -p configs/homarr
 mkdir -p configs/jellyfin
 mkdir -p logs
