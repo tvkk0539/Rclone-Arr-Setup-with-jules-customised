@@ -240,6 +240,12 @@ if run_rclone_move "$DOWNLOAD_PATH"; then
         rm -rf "$DOWNLOAD_PATH"
     fi
 
+    # Explicitly remove the .aria2 control file if it exists
+    if [ -e "${DOWNLOAD_PATH}.aria2" ]; then
+        log_message "Removing .aria2 control file: ${DOWNLOAD_PATH}.aria2"
+        rm -f "${DOWNLOAD_PATH}.aria2"
+    fi
+
     sleep 300
     if [ -d "$DOWNLOAD_PATH" ]; then
         log_message "Running background cleanup for $DOWNLOAD_PATH"
