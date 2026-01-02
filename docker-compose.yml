@@ -103,6 +103,7 @@ services:
     # command: >
     #   mount ${RCLONE_REMOTE}: /data/mount
     #   --allow-other
+    #   --dir-cache-time 1000h
     #   --vfs-cache-mode writes
     #   --read-only
     #   --config /config/rclone/rclone.conf

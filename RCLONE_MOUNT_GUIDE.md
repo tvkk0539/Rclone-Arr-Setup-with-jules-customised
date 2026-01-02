@@ -41,6 +41,7 @@ We have provided two different ways to mount your Cloud Drive to your server.
     command: >
       mount ${RCLONE_REMOTE}: /data/mount
       --allow-other
+      --dir-cache-time 1000h
       --vfs-cache-mode writes
       --read-only
       --config /config/rclone/rclone.conf
@@ -49,8 +50,8 @@ We have provided two different ways to mount your Cloud Drive to your server.
 #### What does it do?
 *   **`--vfs-cache-mode writes`**: Only caches files when you are *uploading* them. When *reading* (streaming), it pulls data directly from the cloud byte-by-byte.
     *   *Risk:* Streaming relies 100% on real-time network stability. Buffering is more likely.
+*   **`--dir-cache-time 1000h`**: We added this to speed up library scans. It uses a tiny amount of RAM to remember file lists, preventing API bans.
 *   **`--read-only`**: Adds a safety layer where Jellyfin cannot delete files from your cloud drive.
-*   **No Dir Cache:** It will likely check the cloud frequently for file lists, making library scans slower and potentially hitting API limits if you have thousands of files.
 
 ---
 
