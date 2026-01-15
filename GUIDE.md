@@ -304,25 +304,17 @@ JDownloader is great for downloading files from websites (Mega, Mediafire, YouTu
     *   Go to `http://<YOUR_VM_IP>:5800`.
     *   You will see a Linux desktop with JDownloader running.
 
-2.  **Verify Automation (The Event Scripter)**:
-    *   The deployment script tried to auto-configure this for you. Let's check if it worked.
-    *   In JDownloader, go to **Settings** -> **Extension Modules**.
-    *   Make sure **Event Scripter** is Enabled.
-    *   Click on **Event Scripter** settings.
-    *   You should see a script named **"Rclone Upload"**.
-    *   **If it's there:** Great! You are done.
-    *   **If it's NOT there:**
-        1.  Click **Add**.
-        2.  **Trigger**: `Package Finished`.
-        3.  **Name**: `Rclone Upload`.
-        4.  **Script**: Paste this exactly:
-            ```javascript
-            var script = "/scripts/jd_manage.sh";
-            var path = package.getDownloadFolder();
-            var name = package.getName();
-            callAsync(function() {}, script, name, path);
-            ```
-        5.  Click **Save**.
+2.  **Enable Automation (One-Time Step)**:
+    *   After JDownloader has started for the first time, run this command in your terminal to enable the auto-upload script:
+        ```bash
+        sudo ./scripts/init_jd.sh
+        ```
+    *   This script will verify that JDownloader is ready, inject the settings, and restart the container.
+
+    *   **Verification**:
+        *   In JDownloader, go to **Settings** -> **Extension Modules**.
+        *   Click on **Event Scripter** settings.
+        *   You should see a script named **"Rclone Upload"**.
 
 3.  **How it works**:
     *   Add links to JDownloader as usual.
