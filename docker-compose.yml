@@ -1,6 +1,6 @@
 services:
   qbittorrent:
-    image: ghcr.io/linuxserver/qbittorrent:latest
+    image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
     environment:
       - PUID=1000
@@ -45,7 +45,7 @@ services:
     restart: unless-stopped
     
   jdownloader:
-    image: ghcr.io/linuxserver/jdownloader-2:latest
+    image: jlesage/jdownloader-2:latest
     container_name: jdownloader
     environment:
       - PUID=1000
@@ -134,7 +134,7 @@ services:
     restart: unless-stopped
 
   jellyfin:
-    image: ghcr.io/linuxserver/jellyfin:latest
+    image: lscr.io/linuxserver/jellyfin:latest
     container_name: jellyfin
     environment:
       - PUID=1000
@@ -150,7 +150,7 @@ services:
     restart: unless-stopped
 
   radarr:
-    image: ghcr.io/linuxserver/radarr:latest
+    image: lscr.io/linuxserver/radarr:latest
     container_name: radarr
     environment:
       - PUID=1000
@@ -170,7 +170,7 @@ services:
     restart: unless-stopped
     
   prowlarr:
-    image: ghcr.io/linuxserver/prowlarr:latest
+    image: lscr.io/linuxserver/prowlarr:latest
     container_name: prowlarr
     environment:
       - PUID=1000
