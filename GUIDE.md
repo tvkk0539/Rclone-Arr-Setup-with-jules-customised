@@ -358,6 +358,21 @@ Since JDownloader is currently running, it might not detect the new configuratio
 
 Once confirmed, JDownloader will behave like qBittorrent: **Download -> Auto Upload -> Auto Delete**.
 
+### Step C.3: Better Remote Access (MyJDownloader)
+
+JDownloader 2 in Docker is technically a desktop app running via VNC (screen recording), which can be laggy or clunky on mobile.
+For a native, fast experience (especially on Android/iOS):
+
+1.  **Create an Account**: Go to [my.jdownloader.org](https://my.jdownloader.org/) and create a free account.
+2.  **Connect your Server**:
+    *   Open your current VNC interface (`http://<YOUR_IP>:5800`).
+    *   Navigate to **Settings** -> **MyJDownloader**.
+    *   Enter your Email and Password and click **Connect**.
+3.  **How to access now**:
+    *   **PC**: Use the website [my.jdownloader.org](https://my.jdownloader.org/).
+    *   **Mobile**: Install the **official JDownloader App** from the Play Store/App Store.
+    *   *Result*: You no longer need to use port 5800 often!
+
 ### Step D: Configure Jellyfin (The Streamer)
 
 *Note: The code installed Jellyfin for you, but you must do the initial "Welcome" setup yourself.*
