@@ -295,6 +295,11 @@ We have already installed a beautiful mobile theme for you. You just need to tur
 
 JDownloader is great for downloading files from websites (Mega, Mediafire, YouTube, etc.).
 
+> **⚠️ IMPORTANT: Firewall Update Required**
+> If you set up your firewall before adding JDownloader, **Port 5800 is BLOCKED**.
+> You MUST go to Google Cloud Console -> Firewall -> Edit your rule -> Add `5800` to the list.
+> If you don't do this, you will see "This site can't be reached".
+
 1.  **Open the Web Interface**:
     *   Go to `http://<YOUR_VM_IP>:5800`.
     *   You will see a Linux desktop with JDownloader running.
