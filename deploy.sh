@@ -136,13 +136,14 @@ mkdir -p configs/qbittorrent
 mkdir -p configs/aria2
 mkdir -p configs/homarr
 mkdir -p configs/jellyfin
+mkdir -p configs/jdownloader
+mkdir -p configs/profilarr
 mkdir -p mount
 mkdir -p logs
 mkdir -p scripts
 
 # Make scripts executable
 chmod +x scripts/*.sh 2>/dev/null || true
-chown -R "$CURRENT_USER:$CURRENT_USER" configs logs scripts
 
 # Fix Log Permissions (Crucial for Docker containers running as non-root)
 # qBittorrent (user 1000) needs to write to this folder
@@ -191,6 +192,9 @@ EOF
 ]
 EOF
  fi
+
+# Fix ownership of all configs (including JDownloader which was just created)
+chown -R "$CURRENT_USER:$CURRENT_USER" configs logs scripts
 
 # 6. Rclone Config Setup
 echo -e "\n${GREEN}[5/7] Setting up Rclone Config...${NC}"
