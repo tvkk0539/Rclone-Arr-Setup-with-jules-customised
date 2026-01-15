@@ -304,13 +304,8 @@ JDownloader is great for downloading files from websites (Mega, Mediafire, YouTu
     *   Go to `http://<YOUR_VM_IP>:5800`.
     *   You will see a Linux desktop with JDownloader running.
 
-2.  **Enable Automation (One-Time Step)**:
-    *   After JDownloader has started for the first time, run this command in your terminal to enable the auto-upload script:
-        ```bash
-        sudo ./scripts/init_jd.sh
-        ```
-    *   This script will verify that JDownloader is ready, inject the settings, and restart the container.
-
+2.  **Enable Automation**:
+    *   The deployment script (`deploy.sh`) now attempts to configure this automatically.
     *   **Verification**:
         *   In JDownloader, go to **Settings** -> **Extension Modules**.
         *   Click on **Event Scripter** settings.

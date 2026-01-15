@@ -365,6 +365,59 @@ else
     docker compose up -d
 fi
 
+# 8. Post-Deployment Automation (JDownloader)
+# We check if JDownloader is running and inject the automation script if needed.
+if docker compose ps --services --filter "status=running" | grep -q "jdownloader"; then
+    echo -e "\n${BLUE}[Auto-Config] Checking JDownloader Automation...${NC}"
+    JD_CONFIG_DIR="configs/jdownloader/cfg"
+    JD_CONFIG_FILE="$JD_CONFIG_DIR/org.jdownloader.settings.GraphicalUserInterfaceSettings.json"
+    JD_SCRIPT_FILE="$JD_CONFIG_DIR/org.jdownloader.extensions.eventscripter.EventScripterExtension.scripts.json"
+
+    # Wait for JDownloader to initialize its config files (max 60 seconds)
+    echo -n "Waiting for JDownloader to initialize..."
+    for i in $(seq 1 12); do
+        if [ -f "$JD_CONFIG_FILE" ]; then
+            echo -e " ${GREEN}Done.${NC}"
+
+            # Check if automation script needs injection
+            if [ ! -f "$JD_SCRIPT_FILE" ]; then
+                echo "Injecting Rclone Upload script..."
+
+                cat <<EOF > "$JD_SCRIPT_FILE"
+[
+  {
+    "eventTrigger": "ON_PACKAGE_FINISHED",
+    "enabled": true,
+    "name": "Rclone Upload",
+    "script": "var script = \"/scripts/jd_manage.sh\";\nvar path = package.getDownloadFolder();\nvar name = package.getName();\ncallAsync(function() {}, script, name, path);",
+    "eventTriggerSettings": {},
+    "id": 1698745632145
+  }
+]
+EOF
+                # Fix permissions
+                chown -R "$CURRENT_USER:$CURRENT_USER" "$JD_CONFIG_DIR"
+
+                # Restart JDownloader to load the new config
+                echo "Restarting JDownloader to apply changes..."
+                docker compose restart jdownloader
+                echo -e "${GREEN}JDownloader Automation Enabled!${NC}"
+            else
+                echo -e "${GREEN}Automation script already active.${NC}"
+            fi
+            break
+        fi
+
+        echo -n "."
+        sleep 5
+    done
+
+    if [ ! -f "$JD_CONFIG_FILE" ]; then
+        echo -e "\n${YELLOW}JDownloader is taking too long to start.${NC}"
+        echo "Automation skipped. You can run 'sudo ./scripts/init_jd.sh' later."
+    fi
+fi
+
 echo -e "\n${GREEN}[7/7] Deployment Complete!${NC}"
 
 # Get External IP Address (for Google Cloud / VPS)

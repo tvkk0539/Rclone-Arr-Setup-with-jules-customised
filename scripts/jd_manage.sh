@@ -1,33 +1,42 @@
-#!/bin/bash
+#!/bin/sh
 
 # JDownloader 2 Post-Processing Script
-# Save this as jd_manage.sh and make it executable with chmod +x
+# Compatible with Alpine/Busybox sh (POSIX)
 
-# Ensure we have the colon for remote path
-if [[ "${RCLONE_REMOTE}" != *":"* ]]; then
-    RCLONE_REMOTE="${RCLONE_REMOTE}:"
-fi
-RCLONE_REMOTE="${RCLONE_REMOTE}/UnSorted/JDownloader"
+# 1. Setup Environment
+# ------------------
+# Rclone Remote: Ensure it ends with ':' if not present
+# We use 'case' for pattern matching in POSIX sh
+case "$RCLONE_REMOTE" in
+    *:*) ;;                 # Already has colon, do nothing
+    *) RCLONE_REMOTE="${RCLONE_REMOTE}:" ;; # Append colon
+esac
 
-RCLONE_HTTP_URL="http://rclone:5572"    # rclone HTTP API URL
-RCLONE_USER="${RCLONE_USER}"
-RCLONE_PASS="${RCLONE_PASS}"
+# Append the destination path
+RCLONE_DEST="${RCLONE_REMOTE}/UnSorted/JDownloader"
 
-# Arguments passed by JDownloader Event Scripter:
-# $1 - Package Name
-# $2 - Download Directory (Absolute Path)
+# Rclone API Configuration
+RCLONE_HTTP_URL="http://rclone:5572"
+# RCLONE_USER and RCLONE_PASS are inherited from the container environment
+
+# 2. Parse Arguments
+# ------------------
+# $1 - Package Name (e.g., "MyMovie")
+# $2 - Download Directory (e.g., "/output/MyMovie")
 
 PACKAGE_NAME="$1"
 DOWNLOAD_PATH="$2"
-
 LOG_FILE="/logs/jd_postprocess.log"
 
+# 3. Logging Helper
+# -----------------
 log_message() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
+    # 'date' formatting might vary on minimal systems, but standard usage works
+    echo "[$(date +%Y-%m-%d\ %H:%M:%S)] $1" >> "$LOG_FILE"
 }
 
 log_message "----------------------------------------"
-log_message "Processing JDownloader Package: $PACKAGE_NAME"
+log_message "Processing Package: $PACKAGE_NAME"
 log_message "Download path: $DOWNLOAD_PATH"
 
 if [ -z "$PACKAGE_NAME" ] || [ -z "$DOWNLOAD_PATH" ]; then
@@ -35,75 +44,89 @@ if [ -z "$PACKAGE_NAME" ] || [ -z "$DOWNLOAD_PATH" ]; then
     exit 1
 fi
 
+# 4. Upload Function
+# ------------------
 run_rclone_move() {
-    local source_path="$1"
+    local src="$1"
+    local response
+    local status
 
-    log_message "Running rclone move via HTTP API from: $source_path to: $RCLONE_REMOTE"
+    log_message "Attempting move to: $RCLONE_DEST"
 
-    # Check if source is a directory or file and use appropriate endpoint
-    if [ -d "$source_path" ]; then
-        log_message "Source is a directory, using sync/move endpoint"
+    if [ -d "$src" ]; then
+        log_message "Source is a directory. Using sync/move."
+        # Construct JSON payload manually to avoid dependency on 'jq'
+        # Note: We escape double quotes inside variables if necessary,
+        # but package names usually are safe-ish.
+        # Ideally we'd use a tool, but we are in minimal sh.
 
-        local json_payload=$(cat <<EOF
+        DATA=$(cat <<EOF
 {
-    "srcFs": "$source_path",
-    "dstFs": "$RCLONE_REMOTE/$PACKAGE_NAME",
+    "srcFs": "$src",
+    "dstFs": "$RCLONE_DEST/$PACKAGE_NAME",
     "deleteEmptySrcDirs": true
 }
 EOF
 )
-
-        local response=$(curl -s -X POST \
+        response=$(curl -s -X POST \
             -u "$RCLONE_USER:$RCLONE_PASS" \
             -H "Content-Type: application/json" \
-            -d "$json_payload" \
+            -d "$DATA" \
             "$RCLONE_HTTP_URL/sync/move" 2>&1)
 
     else
-        log_message "Source is a file, using operations/movefile endpoint"
+        log_message "Source is a file. Using operations/movefile."
 
-        local json_payload=$(cat <<EOF
+        DATA=$(cat <<EOF
 {
     "srcFs": "/",
-    "dstFs": "$RCLONE_REMOTE",
-    "srcRemote": "$source_path",
+    "dstFs": "$RCLONE_DEST",
+    "srcRemote": "$src",
     "dstRemote": "$PACKAGE_NAME"
 }
 EOF
 )
-
-        local response=$(curl -s -X POST \
+        response=$(curl -s -X POST \
             -u "$RCLONE_USER:$RCLONE_PASS" \
             -H "Content-Type: application/json" \
-            -d "$json_payload" \
+            -d "$DATA" \
             "$RCLONE_HTTP_URL/operations/movefile" 2>&1)
     fi
 
-    local curl_exit_code=$?
+    status=$?
 
-    if [ $curl_exit_code -eq 0 ]; then
-        # Check if response contains error
-        if echo "$response" | grep -q '"error"'; then
-            log_message "Rclone move failed with error: $response"
-            return 1
-        else
-            log_message "Rclone move completed successfully"
-            return 0
-        fi
-    else
-        log_message "Failed to connect to rclone HTTP API. curl exit code: $curl_exit_code"
+    # Check curl exit code
+    if [ $status -ne 0 ]; then
+        log_message "Critical: Failed to contact Rclone API. Curl exit code: $status"
         log_message "Response: $response"
         return 1
     fi
+
+    # Check for "error" in JSON response (rudimentary string check)
+    case "$response" in
+        *"error"*)
+            log_message "Rclone API returned error: $response"
+            return 1
+            ;;
+        *)
+            log_message "Rclone move successful."
+            return 0
+            ;;
+    esac
 }
 
+# 5. Execution Logic
+# ------------------
 if run_rclone_move "$DOWNLOAD_PATH"; then
-    log_message "Upload successful. Cleaning up local files."
-    # Force delete the source path to prevent ghost space
-    rm -rf "$DOWNLOAD_PATH"
+    log_message "Upload verified. Cleaning up local files."
+    # Safety check: ensure we don't delete root
+    if [ "$DOWNLOAD_PATH" != "/" ]; then
+        rm -rf "$DOWNLOAD_PATH"
+    fi
 else
-    log_message "Rclone move failed. Keeping local files."
+    log_message "Upload failed. Preserving local files."
+    exit 1
 fi
 
-log_message "Post-processing completed for: $PACKAGE_NAME"
+log_message "Job Complete."
 log_message "----------------------------------------"
