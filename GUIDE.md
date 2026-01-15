@@ -291,6 +291,39 @@ We have already installed a beautiful mobile theme for you. You just need to tur
 
 6.  Click **Save** at the bottom.
 
+### Step C.2: Configure JDownloader 2 (The General Downloader)
+
+JDownloader is great for downloading files from websites (Mega, Mediafire, YouTube, etc.).
+
+1.  **Open the Web Interface**:
+    *   Go to `http://<YOUR_VM_IP>:5800`.
+    *   You will see a Linux desktop with JDownloader running.
+
+2.  **Verify Automation (The Event Scripter)**:
+    *   The deployment script tried to auto-configure this for you. Let's check if it worked.
+    *   In JDownloader, go to **Settings** -> **Extension Modules**.
+    *   Make sure **Event Scripter** is Enabled.
+    *   Click on **Event Scripter** settings.
+    *   You should see a script named **"Rclone Upload"**.
+    *   **If it's there:** Great! You are done.
+    *   **If it's NOT there:**
+        1.  Click **Add**.
+        2.  **Trigger**: `Package Finished`.
+        3.  **Name**: `Rclone Upload`.
+        4.  **Script**: Paste this exactly:
+            ```javascript
+            var script = "/scripts/jd_manage.sh";
+            var path = package.getDownloadFolder();
+            var name = package.getName();
+            callAsync(function() {}, script, name, path);
+            ```
+        5.  Click **Save**.
+
+3.  **How it works**:
+    *   Add links to JDownloader as usual.
+    *   When a package finishes, it will be uploaded to `Remote:/UnSorted/JDownloader/`.
+    *   The local files will be deleted.
+
 ### Step D: Configure Jellyfin (The Streamer)
 
 *Note: The code installed Jellyfin for you, but you must do the initial "Welcome" setup yourself.*
@@ -458,6 +491,7 @@ Use this list to know which port does what, and copy the code below to open them
 | **Jellyseerr** | `5055` | **Requests**. Browse movies and click "Request". |
 | **Radarr** | `7878` | **Movie Manager**. Settings for movies. |
 | **qBittorrent** | `8080` | **Downloader**. See download progress. |
+| **JDownloader** | `5800` | **Downloader**. Web Interface for JD2. |
 | **Prowlarr** | `9696` | **Indexer Manager**. Connects torrent sites. |
 | **AriaNg** | `6880` | **Aria2 Dashboard**. Open this to see downloads. |
 | **Aria2 RPC** | `6800` | **Backend API**. Do NOT open in browser (used internally). |
@@ -471,7 +505,7 @@ When creating your Firewall Rule in Google Cloud Console:
 3.  **Source ranges**: `0.0.0.0/0`
 4.  **Protocols and ports**: Paste exactly this list:
     ```
-    7575,8096,5055,7878,8080,9696,6880,5572,6868
+    7575,8096,5055,7878,8080,5800,9696,6880,5572,6868
     ```
 
 ---

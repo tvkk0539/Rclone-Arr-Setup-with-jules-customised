@@ -174,6 +174,24 @@ EOF
      fi
  fi
 
+ # Ensure JDownloader 2 Event Scripter config exists
+ mkdir -p configs/jdownloader/cfg
+ if [ ! -f configs/jdownloader/cfg/org.jdownloader.extensions.eventscripter.EventScripterExtension.scripts.json ]; then
+     echo "Creating default JDownloader Event Scripter config..."
+     cat <<EOF > configs/jdownloader/cfg/org.jdownloader.extensions.eventscripter.EventScripterExtension.scripts.json
+[
+  {
+    "eventTrigger": "ON_PACKAGE_FINISHED",
+    "enabled": true,
+    "name": "Rclone Upload",
+    "script": "var script = \"/scripts/jd_manage.sh\";\nvar path = package.getDownloadFolder();\nvar name = package.getName();\ncallAsync(function() {}, script, name, path);",
+    "eventTriggerSettings": {},
+    "id": 1698745632145
+  }
+]
+EOF
+ fi
+
 # 6. Rclone Config Setup
 echo -e "\n${GREEN}[5/7] Setting up Rclone Config...${NC}"
 CONFIG_FILE="configs/rclone/rclone.conf"
@@ -230,7 +248,7 @@ fi
 
 # Service Selection Logic
 CORE_SERVICES="rclone"
-OPTIONAL_SERVICES=("homarr" "radarr" "prowlarr" "qbittorrent" "aria2" "ariang" "jellyseerr" "profilarr" "jellyfin")
+OPTIONAL_SERVICES=("homarr" "radarr" "prowlarr" "qbittorrent" "aria2" "ariang" "jellyseerr" "profilarr" "jellyfin" "jdownloader")
 
 echo -e "\n${BLUE}Installation Mode:${NC}"
 echo "1) Full Installation (Install Everything)"
@@ -340,6 +358,7 @@ echo -e "Jellyfin (Stream)  : http://$IP_ADDRESS:8096"
 echo -e "Jellyseerr (Request): http://$IP_ADDRESS:5055"
 echo -e "Radarr             : http://$IP_ADDRESS:7878"
 echo -e "qBittorrent        : http://$IP_ADDRESS:8080"
+echo -e "JDownloader 2      : http://$IP_ADDRESS:5800"
 echo -e "AriaNg (Aria2 UI)  : http://$IP_ADDRESS:6880"
 echo -e "Rclone WebUI       : http://$IP_ADDRESS:5572"
 echo -e "${BLUE}=================================================${NC}"

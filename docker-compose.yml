@@ -45,6 +45,25 @@ services:
       - 6800:6800
     restart: unless-stopped
     
+  jdownloader:
+    image: lscr.io/linuxserver/jdownloader-2:latest
+    container_name: jdownloader
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Kolkata
+      - RCLONE_REMOTE=${RCLONE_REMOTE}
+      - RCLONE_USER=${RCLONE_USER}
+      - RCLONE_PASS=${RCLONE_PASS}
+    volumes:
+      - ${MEDIA_SERVER_ROOT}/configs/jdownloader:/config
+      - ${DOWNLOADS_FOLDER}:/downloads
+      - ${MEDIA_SERVER_ROOT}/scripts:/scripts
+      - ${MEDIA_SERVER_ROOT}/logs:/logs
+    ports:
+      - 5800:5800
+    restart: unless-stopped
+
   ariang:
     image: p3terx/ariang:latest
     container_name: ariang
