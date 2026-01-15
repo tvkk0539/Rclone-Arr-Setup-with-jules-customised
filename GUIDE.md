@@ -358,20 +358,32 @@ Since JDownloader is currently running, it might not detect the new configuratio
 
 Once confirmed, JDownloader will behave like qBittorrent: **Download -> Auto Upload -> Auto Delete**.
 
-### Step C.3: Better Remote Access (MyJDownloader)
+### Step C.3: Better Remote Access & Headless Mode
 
-JDownloader 2 in Docker is technically a desktop app running via VNC (screen recording), which can be laggy or clunky on mobile.
-For a native, fast experience (especially on Android/iOS):
+JDownloader 2 in Docker is technically a desktop app running via VNC (screen recording).
+This can be laggy on mobile. You have two options to improve this:
 
+#### Option A: Standard Mode (Default)
+You keep the VNC interface (Web UI on port 5800) but *also* connect it to the mobile app.
 1.  **Create an Account**: Go to [my.jdownloader.org](https://my.jdownloader.org/) and create a free account.
 2.  **Connect your Server**:
     *   Open your current VNC interface (`http://<YOUR_IP>:5800`).
     *   Navigate to **Settings** -> **MyJDownloader**.
     *   Enter your Email and Password and click **Connect**.
 3.  **How to access now**:
-    *   **PC**: Use the website [my.jdownloader.org](https://my.jdownloader.org/).
-    *   **Mobile**: Install the **official JDownloader App** from the Play Store/App Store.
-    *   *Result*: You no longer need to use port 5800 often!
+    *   **PC**: Use [my.jdownloader.org](https://my.jdownloader.org/).
+    *   **Mobile**: Install the **official JDownloader App**.
+    *   **VNC**: Still works if you need to change advanced settings.
+
+#### Option B: Headless Mode (RAM Saver)
+This mode **disables** the VNC interface (Screen) completely.
+*   **Pros**: Saves ~100MB-300MB RAM. Much faster.
+*   **Cons**: No "Desktop" view. You MUST use the Mobile App or Website to control it.
+*   **How to enable**:
+    1.  Run `sudo ./deploy.sh`.
+    2.  Select **Headless Mode** when asked.
+    3.  Enter your **MyJDownloader Email** and **Password** (Required!).
+    4.  The script will configure everything. You won't be able to open port 5800 anymore, but the App will work perfectly.
 
 ### Step D: Configure Jellyfin (The Streamer)
 

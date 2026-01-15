@@ -93,6 +93,36 @@ RANDOM_KEY=$(openssl rand -hex 32)
 read -p "Enter Homarr Encryption Key (Press Enter to generate random): " INPUT_KEY
 HOMARR_KEY=${INPUT_KEY:-$RANDOM_KEY}
 
+# Ask for JDownloader 2 Mode
+echo -e "\n${YELLOW}Step 3c: JDownloader 2 Configuration${NC}"
+echo "1) Standard Mode (VNC Web Interface + Optional MyJDownloader)"
+echo "2) Headless Mode (No Web/VNC, Saves RAM, REQUIRES MyJDownloader Account)"
+read -p "Select Mode [1/2] (Default: 1): " JD_MODE
+
+JD_HEADLESS=0
+JD_EMAIL=""
+JD_PASSWORD=""
+JD_DEVICE="JDownloader-Docker"
+
+if [ "$JD_MODE" == "2" ]; then
+    echo -e "${BLUE}Headless Mode Selected. You MUST provide MyJDownloader credentials.${NC}"
+    JD_HEADLESS=1
+
+    while [ -z "$JD_EMAIL" ]; do
+        read -p "Enter MyJDownloader Email: " JD_EMAIL
+    done
+
+    while [ -z "$JD_PASSWORD" ]; do
+        read -s -p "Enter MyJDownloader Password: " JD_PASSWORD
+        echo ""
+    done
+
+    read -p "Enter Device Name [JDownloader-Docker]: " INPUT_DEVICE
+    JD_DEVICE=${INPUT_DEVICE:-JDownloader-Docker}
+else
+    echo -e "${BLUE}Standard Mode Selected.${NC}"
+fi
+
 # Set Downloads Folder
 DOWNLOADS_FOLDER="$USER_HOME/downloads"
 echo -e "\nSetting downloads folder to: ${BLUE}$DOWNLOADS_FOLDER${NC}"
@@ -119,6 +149,12 @@ DOCKER_NETWORK=nginx_network
 # Security
 SECRET_ENCRYPTION_KEY=$HOMARR_KEY
 RPC_SECRET=$RPC_SECRET
+
+# JDownloader Configuration
+JDOWNLOADER_HEADLESS=$JD_HEADLESS
+MYJDOWNLOADER_EMAIL=$JD_EMAIL
+MYJDOWNLOADER_PASSWORD=$JD_PASSWORD
+MYJDOWNLOADER_DEVICE_NAME=$JD_DEVICE
 EOL
 
 # Fix permissions for .env so regular user can read it
