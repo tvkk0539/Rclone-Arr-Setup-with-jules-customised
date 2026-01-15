@@ -395,6 +395,14 @@ if docker compose ps --services --filter "status=running" | grep -q "jdownloader
   }
 ]
 EOF
+
+                # Auto-enable Event Scripter Extension
+                JD_EXT_FILE="$JD_CONFIG_DIR/org.jdownloader.extensions.eventscripter.EventScripterExtension.json"
+                if [ ! -f "$JD_EXT_FILE" ]; then
+                    echo '{"enabled":true}' > "$JD_EXT_FILE"
+                    echo "Auto-enabled Event Scripter Extension."
+                fi
+
                 # Fix permissions
                 chown -R "$CURRENT_USER:$CURRENT_USER" "$JD_CONFIG_DIR"
 
