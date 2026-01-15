@@ -324,6 +324,13 @@ JDownloader is great for downloading files from websites (Mega, Mediafire, YouTu
     *   When a package finishes, it will be uploaded to `Remote:/UnSorted/JDownloader/`.
     *   The local files will be deleted.
 
+4.  **Pro Tip: Handling Zip/Rar Files (Usenet)**
+    If you download large files that need extraction (like from Usenet):
+    1.  Go to **Settings** -> **Archive Extractor**.
+    2.  Find **"Removal of archives..."** (at the bottom).
+    3.  Set it to: **"Delete Archive Files after Extraction"**.
+    *   **Why?** This ensures JDownloader deletes the messy `.rar` files *before* our script uploads the data. You save time and cloud space by uploading only the final extracted video!
+
 ### Step D: Configure Jellyfin (The Streamer)
 
 *Note: The code installed Jellyfin for you, but you must do the initial "Welcome" setup yourself.*
