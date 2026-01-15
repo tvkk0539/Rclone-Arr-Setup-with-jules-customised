@@ -336,6 +336,28 @@ JDownloader is great for downloading files from websites (Mega, Mediafire, YouTu
     3.  Set it to: **"Delete Archive Files after Extraction"**.
     *   **Why?** This ensures JDownloader deletes the messy `.rar` files *before* our script uploads the data. You save time and cloud space by uploading only the final extracted video!
 
+**IMPORTANT: Final Step for You**
+Since JDownloader is currently running, it might not detect the new configuration immediately. Please verify the settings in the Web UI:
+
+1.  Open JDownloader in your browser (`http://<YOUR_IP>:5800`).
+2.  Navigate to **Settings** (the tab at the top or the tool icon).
+3.  In the left menu, click on **Extension Modules**.
+4.  Scroll down to **Event Scripter** and ensure it is **Enabled**.
+5.  Click on **Event Scripter** to open its settings.
+6.  Check for a script named **"Rclone Upload"** in the list.
+    *   **If visible**: You are all set! Automation is active.
+    *   **If NOT visible**:
+        *   Restart the container: `sudo docker compose restart jdownloader`
+        *   OR Click **Add**, set Trigger to `Package Finished`, Name to `Rclone Upload`, and paste the following script:
+            ```javascript
+            var script = "/scripts/jd_manage.sh";
+            var path = package.getDownloadFolder();
+            var name = package.getName();
+            callAsync(function() {}, script, name, path);
+            ```
+
+Once confirmed, JDownloader will behave like qBittorrent: **Download -> Auto Upload -> Auto Delete**.
+
 ### Step D: Configure Jellyfin (The Streamer)
 
 *Note: The code installed Jellyfin for you, but you must do the initial "Welcome" setup yourself.*
