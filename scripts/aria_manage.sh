@@ -4,12 +4,20 @@
 # Save this as .sh and make it executable with chmod +x
 
 
+# Ensure we have the colon for remote path
+if [[ "${RCLONE_REMOTE}" != *":"* ]]; then
+    RCLONE_REMOTE="${RCLONE_REMOTE}:"
+fi
 RCLONE_REMOTE="${RCLONE_REMOTE}/UnSorted"
+
 COMPLETED_DIR="/downloads/aria_downloads"    # Directory where completed downloads go (seperate folder for radarr to watch)
 RCLONE_HTTP_URL="http://rclone:5572"   # rclone HTTP API URL
 RCLONE_USER="${RCLONE_USER}"
 RCLONE_PASS="${RCLONE_PASS}"
 
+# Aria2 RPC settings for cleanup
+ARIA2_RPC_URL="http://localhost:6800/jsonrpc"
+# RPC_SECRET comes from environment variable passed by docker-compose
 
 # Arguments passed by aria2:
 # $1 - GID (download identifier)
@@ -42,6 +50,14 @@ log_message "----------------------------------------"
 log_message "Processing download: $DOWNLOAD_NAME (GID: $GID)"
 log_message "File count: $FILE_COUNT"
 log_message "Download path: $DOWNLOAD_PATH"
+
+# Check for empty path (Metadata download or error)
+if [ -z "$DOWNLOAD_PATH" ] || [ "$FILE_COUNT" -eq 0 ]; then
+    log_message "Download path is empty or file count is 0. Likely metadata/magnet resolution."
+    log_message "Skipping rclone move."
+    log_message "----------------------------------------"
+    exit 0
+fi
 
 
 
@@ -125,12 +141,42 @@ EOF
         # Check if response contains error
         if echo "$response" | grep -q '"error"'; then
             log_message "Rclone move failed with error: $response"
+            return 1
         else
             log_message "Rclone move completed successfully"
+            return 0
         fi
     else
         log_message "Failed to connect to rclone HTTP API. curl exit code: $curl_exit_code"
         log_message "Response: $response"
+        return 1
+    fi
+}
+
+remove_download_from_aria2() {
+    log_message "Removing task from Aria2 (GID: $GID)"
+
+    # JSON-RPC call to removeDownloadResult (removes from list)
+    # We use "token:$RPC_SECRET" for authentication
+
+    local json_payload=$(cat <<EOF
+{
+    "jsonrpc": "2.0",
+    "id": "qwer",
+    "method": "aria2.removeDownloadResult",
+    "params": ["token:$RPC_SECRET", "$GID"]
+}
+EOF
+)
+    local response=$(curl -s -X POST \
+        -H "Content-Type: application/json" \
+        -d "$json_payload" \
+        "$ARIA2_RPC_URL")
+
+    if [[ "$response" == *"OK"* ]] || [[ "$response" == *"$GID"* ]]; then
+        log_message "Task removed from Aria2 successfully."
+    else
+        log_message "Failed to remove task from Aria2. Response: $response"
     fi
 }
 
@@ -184,11 +230,29 @@ cleanup_empty_folder() {
 
 
 # main logic
-run_rclone_move "$DOWNLOAD_PATH"
-sleep 300
-if [ -d "$DOWNLOAD_PATH" ]; then
-    log_message "Running background cleanup for $DOWNLOAD_PATH"
-    cleanup_empty_folder "$DOWNLOAD_PATH" &
+if run_rclone_move "$DOWNLOAD_PATH"; then
+    # If move was successful, remove the task from Aria2 UI
+    remove_download_from_aria2
+
+    # Also force remove the local file/directory if it still exists (double cleanup)
+    if [ -e "$DOWNLOAD_PATH" ]; then
+        log_message "Force cleaning up local path: $DOWNLOAD_PATH"
+        rm -rf "$DOWNLOAD_PATH"
+    fi
+
+    # Explicitly remove the .aria2 control file if it exists
+    if [ -e "${DOWNLOAD_PATH}.aria2" ]; then
+        log_message "Removing .aria2 control file: ${DOWNLOAD_PATH}.aria2"
+        rm -f "${DOWNLOAD_PATH}.aria2"
+    fi
+
+    sleep 300
+    if [ -d "$DOWNLOAD_PATH" ]; then
+        log_message "Running background cleanup for $DOWNLOAD_PATH"
+        cleanup_empty_folder "$DOWNLOAD_PATH" &
+    fi
+else
+    log_message "Rclone move failed. Keeping download in Aria2."
 fi
 
 log_message "Post-processing completed for: $DOWNLOAD_NAME (GID: $GID)"

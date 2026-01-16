@@ -1,4 +1,3 @@
-version: "3.9"
 services:
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
@@ -12,12 +11,15 @@ services:
       - RCLONE_REMOTE=${RCLONE_REMOTE}
       - RCLONE_USER=${RCLONE_USER}
       - RCLONE_PASS=${RCLONE_PASS}
+      - QBIT_PASSWORD=${QBIT_PASSWORD}
     volumes:
       - ${MEDIA_SERVER_ROOT}/configs:/config  # dont add qBittorrent in host folder - qbit automatically creates one
       - ${DOWNLOADS_FOLDER}:/downloads
       - ${MEDIA_SERVER_ROOT}/logs:/logs
       - ${MEDIA_SERVER_ROOT}/scripts:/scripts
       - ${MEDIA_SERVER_ROOT}/locks:/tmp/locks
+    ports:
+      - 8080:8080
     restart: unless-stopped
     
   aria2:
@@ -38,11 +40,34 @@ services:
       - ${MEDIA_SERVER_ROOT}/logs:/logs
       - ${MEDIA_SERVER_ROOT}/scripts:/scripts
       - ${MEDIA_SERVER_ROOT}/locks:/tmp/locks
+    ports:
+      - 6800:6800
     restart: unless-stopped
     
+  jdownloader:
+    image: jlesage/jdownloader-2:latest
+    container_name: jdownloader
+    environment:
+      - USER_ID=1000
+      - GROUP_ID=1000
+      - TZ=Asia/Kolkata
+      - RCLONE_REMOTE=${RCLONE_REMOTE}
+      - RCLONE_USER=${RCLONE_USER}
+      - RCLONE_PASS=${RCLONE_PASS}
+    volumes:
+      - ${MEDIA_SERVER_ROOT}/configs/jdownloader:/config
+      - ${DOWNLOADS_FOLDER}:/downloads
+      - ${MEDIA_SERVER_ROOT}/scripts:/scripts
+      - ${MEDIA_SERVER_ROOT}/logs:/logs
+    ports:
+      - 5800:5800
+    restart: unless-stopped
+
   ariang:
     image: p3terx/ariang:latest
     container_name: ariang
+    ports:
+      - 6880:6880
     restart: unless-stopped
     
   rclone:
@@ -54,6 +79,7 @@ services:
       --rc-user ${RCLONE_USER} 
       --rc-pass ${RCLONE_PASS} 
       --rc-serve
+      --config /config/rclone/rclone.conf
     environment:
       - RCLONE_USER=${RCLONE_USER}
       - RCLONE_PASS=${RCLONE_PASS}
@@ -61,9 +87,68 @@ services:
       - ${MEDIA_SERVER_ROOT}/configs/rclone:/config/rclone
       - ${DOWNLOADS_FOLDER}:/downloads  
       - ${MEDIA_SERVER_ROOT}/logs:/logs
+    ports:
+      - 5572:5572
     restart: unless-stopped
 
-    
+  mount:
+    image: rclone/rclone:latest
+    container_name: mount
+    environment:
+      - RCLONE_REMOTE=${RCLONE_REMOTE}
+    devices:
+      - /dev/fuse:/dev/fuse
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+
+    # --- OPTION 1: High Performance (Recommended for smooth playback) ---
+    # Uses disk cache to prevent buffering. Higher CPU/Disk usage.
+    command: >
+      mount ${RCLONE_REMOTE}: /data/mount
+      --allow-other
+      --allow-non-empty
+      --dir-cache-time 1000h
+      --poll-interval 10s
+      --vfs-cache-mode full
+      --vfs-cache-max-size 10G
+      --vfs-cache-max-age 12h
+      --config /config/rclone/rclone.conf
+
+    # --- OPTION 2: Low Resource (Friend's suggestion) ---
+    # Saves CPU/RAM/Disk. May buffer more often. Good for small VPS.
+    # To use: Comment out Option 1 above (add #), and uncomment Option 2 below (remove #).
+    # command: >
+    #   mount ${RCLONE_REMOTE}: /data/mount
+    #   --allow-other
+    #   --allow-non-empty
+    #   --dir-cache-time 1000h
+    #   --vfs-cache-mode writes
+    #   --read-only
+    #   --config /config/rclone/rclone.conf
+
+    volumes:
+      - ${MEDIA_SERVER_ROOT}/configs/rclone:/config/rclone
+      - ${MEDIA_SERVER_ROOT}/mount:/data/mount:shared
+    restart: unless-stopped
+
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Kolkata
+    volumes:
+      - ${MEDIA_SERVER_ROOT}/configs/jellyfin:/config
+      - ${MEDIA_SERVER_ROOT}/mount:/data/mount:rslave
+    ports:
+      - 8096:8096
+    depends_on:
+      - mount
+    restart: unless-stopped
+
   radarr:
     image: lscr.io/linuxserver/radarr:latest
     container_name: radarr
@@ -80,6 +165,8 @@ services:
       - ${MEDIA_SERVER_ROOT}/scripts:/scripts
       - ${MEDIA_SERVER_ROOT}/logs:/logs
       - ${MEDIA_SERVER_ROOT}/locks:/tmp/locks
+    ports:
+      - 7878:7878
     restart: unless-stopped
     
   prowlarr:
@@ -91,6 +178,8 @@ services:
       - TZ=Asia/Kolkata
     volumes:
       - ${MEDIA_SERVER_ROOT}/configs/prowlarr:/config
+    ports:
+      - 9696:9696
     restart: unless-stopped
     
   homarr:
@@ -102,6 +191,8 @@ services:
       - ${MEDIA_SERVER_ROOT}/configs/homarr:/appdata
     environment:
       - SECRET_ENCRYPTION_KEY=${SECRET_ENCRYPTION_KEY}
+    ports:
+      - 7575:7575
       
   jellyseerr:
     image: fallenbagel/jellyseerr:latest
@@ -112,6 +203,8 @@ services:
       - PORT=5055
     volumes:
       - ${MEDIA_SERVER_ROOT}/configs/jellyseer:/app/config
+    ports:
+      - 5055:5055
     restart: unless-stopped
     
   profilarr:
@@ -121,6 +214,8 @@ services:
       - ${MEDIA_SERVER_ROOT}/configs/profilarr:/config
     environment:
       - TZ=Asia/Kolkata
+    ports:
+      - 6868:6868
     restart: unless-stopped
    
 networks:

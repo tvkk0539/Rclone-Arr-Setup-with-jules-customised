@@ -4,7 +4,7 @@
 # Save this as radarr_manage.sh and make it executable with chmod +x
 # Configure in Radarr: Settings -> Connect -> Custom Script
 
-RCLONE_REMOTE="${RCLONE_REMOTE}/Movies"  # Movies destination
+RCLONE_REMOTE="${RCLONE_REMOTE}:/Movies"  # Movies destination
 RCLONE_HTTP_URL="http://rclone:5572"     # rclone HTTP API URL
 RCLONE_USER="${RCLONE_USER}"
 RCLONE_PASS="${RCLONE_PASS}"

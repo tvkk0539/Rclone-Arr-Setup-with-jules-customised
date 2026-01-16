@@ -4,7 +4,7 @@
 # Save this as .sh and make it executable with chmod +x
 
 
-RCLONE_REMOTE="${RCLONE_REMOTE}/UnSorted"
+RCLONE_REMOTE="${RCLONE_REMOTE}:/UnSorted"
 RCLONE_HTTP_URL="http://rclone:5572"    # rclone HTTP API URL
 RCLONE_USER="${RCLONE_USER}"
 RCLONE_PASS="${RCLONE_PASS}"
@@ -15,12 +15,14 @@ RCLONE_PASS="${RCLONE_PASS}"
 # %F - Content path (directory for multi-file torrents, file path for single-file)
 # %D - Save directory
 # %L - Categories
+# %I - Info Hash
 
-# so use ->  qbit_manage.sh "%N" "%F" "%L"      in qbit script run field
+# so use ->  qbit_manage.sh "%N" "%F" "%L" "%I"     in qbit script run field
 
 TORRENT_NAME="$1"
 CONTENT_PATH="$2"
 TORRENT_CATEGORY="$3"
+TORRENT_HASH="$4"
 
 LOG_FILE="/logs/qbit_postprocess.log"
 
@@ -109,12 +111,128 @@ EOF
         # Check if response contains error
         if echo "$response" | grep -q '"error"'; then
             log_message "Rclone move failed with error: $response"
+            return 1
         else
             log_message "Rclone move completed successfully"
+            return 0
         fi
     else
         log_message "Failed to connect to rclone HTTP API. curl exit code: $curl_exit_code"
         log_message "Response: $response"
+        return 1
+    fi
+}
+
+remove_torrent_from_client() {
+    if [ -z "$TORRENT_HASH" ]; then
+        log_message "Torrent hash not provided. Skipping qBittorrent removal."
+        return
+    fi
+
+    log_message "Removing torrent from qBittorrent: $TORRENT_NAME (Hash: $TORRENT_HASH)"
+
+    # qBittorrent API: /api/v2/torrents/delete
+    # Parameters: hashes (string), deleteFiles (bool)
+    # We use deleteFiles=true to ensure cleanup, though rclone should have moved them.
+    # We use 127.0.0.1 to avoid IPv6 issues and add Referer/Origin to satisfy CSRF checks.
+
+    local response=$(curl -s -X POST \
+        -H "Referer: http://127.0.0.1:8080" \
+        -H "Origin: http://127.0.0.1:8080" \
+        -d "hashes=$TORRENT_HASH" \
+        -d "deleteFiles=true" \
+        "http://127.0.0.1:8080/api/v2/torrents/delete")
+
+    if [ -z "$response" ]; then
+        log_message "Torrent removal request sent successfully."
+    elif [[ "$response" == *"Forbidden"* ]]; then
+        log_message "ERROR: Torrent removal FAILED with 'Forbidden'."
+
+        # Cookie file for session
+        local cookie_file="/tmp/qbit_cookie_$(date +%s).txt"
+
+        # PRIORITY 1: Check if user provided QBIT_PASSWORD in .env
+        local temp_pass=""
+        if [ ! -z "$QBIT_PASSWORD" ]; then
+            log_message "Using QBIT_PASSWORD from environment variable."
+            temp_pass="$QBIT_PASSWORD"
+        else
+            # Search in /config (application logs) AND /logs (in case user mapped it differently)
+            temp_pass=$(grep -r "A temporary password is provided for this session:" /config /logs 2>/dev/null | tail -n 1 | awk -F ': ' '{print $NF}' | tr -d '[:space:]')
+            if [ ! -z "$temp_pass" ]; then
+                 log_message "Found temporary password in logs: $temp_pass."
+            fi
+        fi
+
+        if [ ! -z "$temp_pass" ]; then
+            log_message "Attempting login with detected/provided password..."
+
+            local temp_login_response=$(curl -s -i \
+                -H "Referer: http://127.0.0.1:8080" \
+                -H "Origin: http://127.0.0.1:8080" \
+                -c "$cookie_file" \
+                -d "username=admin&password=$temp_pass" \
+                "http://127.0.0.1:8080/api/v2/auth/login")
+
+            # Strictly check for "Ok." in body to confirm success. "200 OK" header is not enough as qBit returns it on failure too.
+            if [[ "$temp_login_response" == *"Ok."* ]]; then
+                 log_message "Password login successful. Retrying torrent removal..."
+
+                 local retry_response=$(curl -s -X POST \
+                    -b "$cookie_file" \
+                    -H "Referer: http://127.0.0.1:8080" \
+                    -H "Origin: http://127.0.0.1:8080" \
+                    -d "hashes=$TORRENT_HASH" \
+                    -d "deleteFiles=true" \
+                    "http://127.0.0.1:8080/api/v2/torrents/delete")
+
+                if [ -z "$retry_response" ]; then
+                    log_message "Torrent removal request sent successfully."
+                    rm -f "$cookie_file"
+                    return
+                else
+                    log_message "Retry failed. Response: $retry_response"
+                fi
+            else
+                log_message "Login with password failed."
+            fi
+        fi
+
+        # PRIORITY 2: Fallback to default credentials if no temp password or temp login failed
+        log_message "Attempting fallback login with default credentials (admin/adminadmin)..."
+
+        local login_response=$(curl -s -i \
+            -H "Referer: http://127.0.0.1:8080" \
+            -H "Origin: http://127.0.0.1:8080" \
+            -c "$cookie_file" \
+            -d "username=admin&password=adminadmin" \
+            "http://127.0.0.1:8080/api/v2/auth/login")
+
+        # Strictly check for "Ok." in body.
+        if [[ "$login_response" == *"Ok."* ]]; then
+            log_message "Default login successful. Retrying torrent removal..."
+
+            local retry_response=$(curl -s -X POST \
+                -b "$cookie_file" \
+                -H "Referer: http://127.0.0.1:8080" \
+                -H "Origin: http://127.0.0.1:8080" \
+                -d "hashes=$TORRENT_HASH" \
+                -d "deleteFiles=true" \
+                "http://127.0.0.1:8080/api/v2/torrents/delete")
+
+            if [ -z "$retry_response" ]; then
+                log_message "Torrent removal request sent successfully (via default credentials)."
+            else
+                log_message "Retry failed. Response: $retry_response"
+            fi
+        else
+            log_message "All login attempts failed. Please ensure 'Bypass authentication for clients on localhost' is CHECKED in qBittorrent settings."
+            log_message "Login response: $login_response"
+        fi
+
+        rm -f "$cookie_file"
+    else
+        log_message "Torrent removal response: $response"
     fi
 }
 
@@ -166,13 +284,17 @@ cleanup_empty_folder() {
 
 
 
-run_rclone_move "$CONTENT_PATH"
+if run_rclone_move "$CONTENT_PATH"; then
+    sleep 5
+    remove_torrent_from_client
+    sleep 300 # helpfull for smaller files
 
-sleep 300 # helpfull for smaller files
-
-if [ -d "$CONTENT_PATH" ]; then
-    log_message "Running background cleanup for $CONTENT_PATH"
-    cleanup_empty_folder "$CONTENT_PATH" &
+    if [ -d "$CONTENT_PATH" ]; then
+        log_message "Running background cleanup for $CONTENT_PATH"
+        cleanup_empty_folder "$CONTENT_PATH" &
+    fi
+else
+    log_message "Rclone move failed. Skipping torrent removal to prevent data loss."
 fi
 
 
