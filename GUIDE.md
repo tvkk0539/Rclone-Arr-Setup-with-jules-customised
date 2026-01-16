@@ -316,7 +316,17 @@ JDownloader is great for downloading files from websites (Mega, Mediafire, YouTu
     *   When a package finishes, it will be uploaded to `Remote:/UnSorted/JDownloader/`.
     *   The local files will be deleted.
 
-4.  **Pro Tip: Handling Zip/Rar Files (Usenet)**
+4.  **Troubleshooting: Extension "Install Now"**
+    *   If you see a button saying **"Install Now"** next to "Event Scripter" in the settings:
+    *   **Click it!** JDownloader requires this one-time manual click to download the extension file.
+    *   Once installed, the automation script ("Rclone Upload") will automatically activate.
+
+5.  **Troubleshooting: VNC / WebUI Errors**
+    *   If the Web Interface (`:5800`) is blank or crashes, it is often due to font issues.
+    *   The deployment script automatically applies the fix (`ENABLE_CJK_FONT=1`).
+    *   If you still have issues, try clearing your browser cache or using the **MyJDownloader** app (Headless Mode).
+
+6.  **Pro Tip: Handling Zip/Rar Files (Usenet)**
     If you download large files that need extraction (like from Usenet):
     1.  Go to **Settings** -> **Archive Extractor**.
     2.  Find **"Removal of archives..."** (at the bottom).
