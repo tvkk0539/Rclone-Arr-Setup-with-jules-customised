@@ -374,9 +374,9 @@ if docker compose ps --services --filter "status=running" | grep -q "jdownloader
     JD_SETTINGS_FILE="$JD_CONFIG_DIR/org.jdownloader.settings.GeneralSettings.json"
     JD_SCRIPT_FILE="$JD_CONFIG_DIR/org.jdownloader.extensions.eventscripter.EventScripterExtension.scripts.json"
 
-    # Wait for JDownloader to initialize its config files (max 60 seconds)
+    # Wait for JDownloader to initialize its config files (max 180 seconds)
     echo -n "Waiting for JDownloader to initialize..."
-    for i in $(seq 1 12); do
+    for i in $(seq 1 36); do
         if [ -f "$JD_CONFIG_FILE" ]; then
             echo -e " ${GREEN}Done.${NC}"
 
