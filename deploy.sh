@@ -371,6 +371,7 @@ if docker compose ps --services --filter "status=running" | grep -q "jdownloader
     echo -e "\n${BLUE}[Auto-Config] Checking JDownloader Automation...${NC}"
     JD_CONFIG_DIR="configs/jdownloader/cfg"
     JD_CONFIG_FILE="$JD_CONFIG_DIR/org.jdownloader.settings.GraphicalUserInterfaceSettings.json"
+    JD_SETTINGS_FILE="$JD_CONFIG_DIR/org.jdownloader.settings.GeneralSettings.json"
     JD_SCRIPT_FILE="$JD_CONFIG_DIR/org.jdownloader.extensions.eventscripter.EventScripterExtension.scripts.json"
 
     # Wait for JDownloader to initialize its config files (max 60 seconds)
@@ -379,7 +380,36 @@ if docker compose ps --services --filter "status=running" | grep -q "jdownloader
         if [ -f "$JD_CONFIG_FILE" ]; then
             echo -e " ${GREEN}Done.${NC}"
 
-            # Check if automation script needs injection
+            # 1. Force Default Download Path to /downloads
+            # We must STOP JDownloader first to prevent it from overwriting our changes on shutdown
+            echo "Stopping JDownloader to update settings..."
+            docker compose stop jdownloader
+
+            if [ ! -f "$JD_SETTINGS_FILE" ]; then
+                echo "Setting Default Download Path to /downloads..."
+                echo '{"defaultdownloadfolder" : "/downloads"}' > "$JD_SETTINGS_FILE"
+                chown "$CURRENT_USER:$CURRENT_USER" "$JD_SETTINGS_FILE"
+            else
+                # Update existing setting if needed
+                if ! grep -q '"defaultdownloadfolder"' "$JD_SETTINGS_FILE"; then
+                     # Use Python to safely insert the key if available, or basic sed injection
+                     if command -v python3 &>/dev/null; then
+                         python3 -c "import json; f='$JD_SETTINGS_FILE'; d=json.load(open(f)); d['defaultdownloadfolder']='/downloads'; json.dump(d, open(f, 'w'), indent=4)"
+                         echo "Updated download path using Python."
+                     else
+                         # Fallback: Dangerous to append to JSON without proper parsing.
+                         # We will warn the user instead of risking file corruption.
+                         echo -e "${YELLOW}Warning: Could not auto-set default download folder (Python missing).${NC}"
+                         echo "Please manually set 'Default Download Folder' to '/downloads' in JDownloader settings."
+                     fi
+                else
+                     # Use sed to replace the value (safe for simple string replacement)
+                     sed -i 's|"defaultdownloadfolder"\s*:\s*"[^"]*"|"defaultdownloadfolder" : "/downloads"|g' "$JD_SETTINGS_FILE"
+                     echo "Updated download path setting."
+                fi
+            fi
+
+            # 2. Check if automation script needs injection
             if [ ! -f "$JD_SCRIPT_FILE" ]; then
                 echo "Injecting Rclone Upload script..."
 
@@ -407,11 +437,14 @@ EOF
                 chown -R "$CURRENT_USER:$CURRENT_USER" "$JD_CONFIG_DIR"
 
                 # Restart JDownloader to load the new config
-                echo "Restarting JDownloader to apply changes..."
-                docker compose restart jdownloader
+                # We used 'stop' earlier, so we use 'start' or 'up -d' here
+                echo "Starting JDownloader to apply changes..."
+                docker compose start jdownloader
                 echo -e "${GREEN}JDownloader Automation Enabled!${NC}"
             else
                 echo -e "${GREEN}Automation script already active.${NC}"
+                # Ensure it is running (since we stopped it above)
+                docker compose start jdownloader
             fi
             break
         fi
