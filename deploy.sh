@@ -214,6 +214,9 @@ EOF
 # Fix ownership of all configs
 chown -R "$CURRENT_USER:$CURRENT_USER" configs logs scripts
 
+# Fix specific permissions for JDownloader (Container runs as user 1000)
+chown -R 1000:1000 configs/jdownloader
+
 # 6. Rclone Config Setup
 echo -e "\n${GREEN}[5/7] Setting up Rclone Config...${NC}"
 CONFIG_FILE="configs/rclone/rclone.conf"
@@ -388,7 +391,7 @@ if docker compose ps --services --filter "status=running" | grep -q "jdownloader
             if [ ! -f "$JD_SETTINGS_FILE" ]; then
                 echo "Setting Default Download Path to /downloads..."
                 echo '{"defaultdownloadfolder" : "/downloads"}' > "$JD_SETTINGS_FILE"
-                chown "$CURRENT_USER:$CURRENT_USER" "$JD_SETTINGS_FILE"
+                chown 1000:1000 "$JD_SETTINGS_FILE"
             else
                 # Update existing setting if needed
                 if ! grep -q '"defaultdownloadfolder"' "$JD_SETTINGS_FILE"; then
@@ -433,8 +436,8 @@ EOF
                     echo "Auto-enabled Event Scripter Extension."
                 fi
 
-                # Fix permissions
-                chown -R "$CURRENT_USER:$CURRENT_USER" "$JD_CONFIG_DIR"
+                # Fix permissions (Must be user 1000 for JDownloader)
+                chown -R 1000:1000 "$JD_CONFIG_DIR"
 
                 # Restart JDownloader to load the new config
                 # We used 'stop' earlier, so we use 'start' or 'up -d' here
