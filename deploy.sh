@@ -220,7 +220,8 @@ mkdir -p configs/jdownloader/cfg
 
 # 1. Create GUI Settings file (Prevents 'jq: error' during container init)
 if [ ! -f "configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfaceSettings.json" ]; then
-    echo "{}" > configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfaceSettings.json
+    # We disable the tray icon to prevent the "Tray isn't supported" error on startup
+    echo '{"trayiconenabled": false}' > configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfaceSettings.json
 fi
 
 # 2. Set Default Download Path to /downloads
