@@ -214,6 +214,20 @@ EOF
 # Fix ownership of all configs
 chown -R "$CURRENT_USER:$CURRENT_USER" configs logs scripts
 
+# Pre-Create JDownloader Configs to prevent Startup Crash in Headless Mode
+echo -e "\n${BLUE}Pre-configuring JDownloader...${NC}"
+mkdir -p configs/jdownloader/cfg
+
+# 1. Create GUI Settings file (Prevents 'jq: error' during container init)
+if [ ! -f "configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfaceSettings.json" ]; then
+    echo "{}" > configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfaceSettings.json
+fi
+
+# 2. Set Default Download Path to /downloads
+if [ ! -f "configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json" ]; then
+    echo '{"defaultdownloadfolder" : "/downloads"}' > configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json
+fi
+
 # Fix specific permissions for JDownloader (Container runs as user 1000)
 chown -R 1000:1000 configs/jdownloader
 
@@ -374,7 +388,6 @@ if docker compose ps --services --filter "status=running" | grep -q "jdownloader
     echo -e "\n${BLUE}[Auto-Config] Checking JDownloader Automation...${NC}"
     JD_CONFIG_DIR="configs/jdownloader/cfg"
     JD_CONFIG_FILE="$JD_CONFIG_DIR/org.jdownloader.settings.GraphicalUserInterfaceSettings.json"
-    JD_SETTINGS_FILE="$JD_CONFIG_DIR/org.jdownloader.settings.GeneralSettings.json"
     JD_SCRIPT_FILE="$JD_CONFIG_DIR/org.jdownloader.extensions.eventscripter.EventScripterExtension.scripts.json"
 
     # Wait for JDownloader to initialize its config files (max 180 seconds)
@@ -383,38 +396,11 @@ if docker compose ps --services --filter "status=running" | grep -q "jdownloader
         if [ -f "$JD_CONFIG_FILE" ]; then
             echo -e " ${GREEN}Done.${NC}"
 
-            # 1. Force Default Download Path to /downloads
-            # We must STOP JDownloader first to prevent it from overwriting our changes on shutdown
-            echo "Stopping JDownloader to update settings..."
-            docker compose stop jdownloader
-
-            if [ ! -f "$JD_SETTINGS_FILE" ]; then
-                echo "Setting Default Download Path to /downloads..."
-                echo '{"defaultdownloadfolder" : "/downloads"}' > "$JD_SETTINGS_FILE"
-                chown 1000:1000 "$JD_SETTINGS_FILE"
-            else
-                # Update existing setting if needed
-                if ! grep -q '"defaultdownloadfolder"' "$JD_SETTINGS_FILE"; then
-                     # Use Python to safely insert the key if available, or basic sed injection
-                     if command -v python3 &>/dev/null; then
-                         python3 -c "import json; f='$JD_SETTINGS_FILE'; d=json.load(open(f)); d['defaultdownloadfolder']='/downloads'; json.dump(d, open(f, 'w'), indent=4)"
-                         echo "Updated download path using Python."
-                     else
-                         # Fallback: Dangerous to append to JSON without proper parsing.
-                         # We will warn the user instead of risking file corruption.
-                         echo -e "${YELLOW}Warning: Could not auto-set default download folder (Python missing).${NC}"
-                         echo "Please manually set 'Default Download Folder' to '/downloads' in JDownloader settings."
-                     fi
-                else
-                     # Use sed to replace the value (safe for simple string replacement)
-                     sed -i 's|"defaultdownloadfolder"\s*:\s*"[^"]*"|"defaultdownloadfolder" : "/downloads"|g' "$JD_SETTINGS_FILE"
-                     echo "Updated download path setting."
-                fi
-            fi
-
-            # 2. Check if automation script needs injection
+            # Check if automation script needs injection
             if [ ! -f "$JD_SCRIPT_FILE" ]; then
                 echo "Injecting Rclone Upload script..."
+                # We stop JD to safely inject the script (though technically less critical for scripts, good practice)
+                docker compose stop jdownloader
 
                 cat <<EOF > "$JD_SCRIPT_FILE"
 [
@@ -446,8 +432,6 @@ EOF
                 echo -e "${GREEN}JDownloader Automation Enabled!${NC}"
             else
                 echo -e "${GREEN}Automation script already active.${NC}"
-                # Ensure it is running (since we stopped it above)
-                docker compose start jdownloader
             fi
             break
         fi
