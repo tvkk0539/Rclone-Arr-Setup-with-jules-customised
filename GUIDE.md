@@ -304,25 +304,12 @@ JDownloader is great for downloading files from websites (Mega, Mediafire, YouTu
     *   Go to `http://<YOUR_VM_IP>:5800`.
     *   You will see a Linux desktop with JDownloader running.
 
-2.  **Verify Automation (The Event Scripter)**:
-    *   The deployment script tried to auto-configure this for you. Let's check if it worked.
-    *   In JDownloader, go to **Settings** -> **Extension Modules**.
-    *   Make sure **Event Scripter** is Enabled.
-    *   Click on **Event Scripter** settings.
-    *   You should see a script named **"Rclone Upload"**.
-    *   **If it's there:** Great! You are done.
-    *   **If it's NOT there:**
-        1.  Click **Add**.
-        2.  **Trigger**: `Package Finished`.
-        3.  **Name**: `Rclone Upload`.
-        4.  **Script**: Paste this exactly:
-            ```javascript
-            var script = "/scripts/jd_manage.sh";
-            var path = package.getDownloadFolder();
-            var name = package.getName();
-            callAsync(function() {}, script, name, path);
-            ```
-        5.  Click **Save**.
+2.  **Enable Automation**:
+    *   The deployment script (`deploy.sh`) now attempts to configure this automatically.
+    *   **Verification**:
+        *   In JDownloader, go to **Settings** -> **Extension Modules**.
+        *   Click on **Event Scripter** settings.
+        *   You should see a script named **"Rclone Upload"**.
 
 3.  **How it works**:
     *   Add links to JDownloader as usual.
@@ -335,6 +322,55 @@ JDownloader is great for downloading files from websites (Mega, Mediafire, YouTu
     2.  Find **"Removal of archives..."** (at the bottom).
     3.  Set it to: **"Delete Archive Files after Extraction"**.
     *   **Why?** This ensures JDownloader deletes the messy `.rar` files *before* our script uploads the data. You save time and cloud space by uploading only the final extracted video!
+
+**IMPORTANT: Final Step for You**
+Since JDownloader is currently running, it might not detect the new configuration immediately. Please verify the settings in the Web UI:
+
+1.  Open JDownloader in your browser (`http://<YOUR_IP>:5800`).
+2.  Navigate to **Settings** (the tab at the top or the tool icon).
+3.  In the left menu, click on **Extension Modules**.
+4.  Scroll down to **Event Scripter** and ensure it is **Enabled**.
+5.  Click on **Event Scripter** to open its settings.
+6.  Check for a script named **"Rclone Upload"** in the list.
+    *   **If visible**: You are all set! Automation is active.
+    *   **If NOT visible**:
+        *   Restart the container: `sudo docker compose restart jdownloader`
+        *   OR Click **Add**, set Trigger to `Package Finished`, Name to `Rclone Upload`, and paste the following script:
+            ```javascript
+            var script = "/scripts/jd_manage.sh";
+            var path = package.getDownloadFolder();
+            var name = package.getName();
+            callAsync(function() {}, script, name, path);
+            ```
+
+Once confirmed, JDownloader will behave like qBittorrent: **Download -> Auto Upload -> Auto Delete**.
+
+### Step C.3: Better Remote Access & Headless Mode
+
+JDownloader 2 in Docker is technically a desktop app running via VNC (screen recording).
+This can be laggy on mobile. You have two options to improve this:
+
+#### Option A: Standard Mode (Default)
+You keep the VNC interface (Web UI on port 5800) but *also* connect it to the mobile app.
+1.  **Create an Account**: Go to [my.jdownloader.org](https://my.jdownloader.org/) and create a free account.
+2.  **Connect your Server**:
+    *   Open your current VNC interface (`http://<YOUR_IP>:5800`).
+    *   Navigate to **Settings** -> **MyJDownloader**.
+    *   Enter your Email and Password and click **Connect**.
+3.  **How to access now**:
+    *   **PC**: Use [my.jdownloader.org](https://my.jdownloader.org/).
+    *   **Mobile**: Install the **official JDownloader App**.
+    *   **VNC**: Still works if you need to change advanced settings.
+
+#### Option B: Headless Mode (RAM Saver)
+This mode **disables** the VNC interface (Screen) completely.
+*   **Pros**: Saves ~100MB-300MB RAM. Much faster.
+*   **Cons**: No "Desktop" view. You MUST use the Mobile App or Website to control it.
+*   **How to enable**:
+    1.  Run `sudo ./deploy.sh`.
+    2.  Select **Headless Mode** when asked.
+    3.  Enter your **MyJDownloader Email** and **Password** (Required!).
+    4.  The script will configure everything. You won't be able to open port 5800 anymore, but the App will work perfectly.
 
 ### Step D: Configure Jellyfin (The Streamer)
 

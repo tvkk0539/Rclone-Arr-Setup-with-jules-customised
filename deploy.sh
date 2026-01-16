@@ -93,6 +93,36 @@ RANDOM_KEY=$(openssl rand -hex 32)
 read -p "Enter Homarr Encryption Key (Press Enter to generate random): " INPUT_KEY
 HOMARR_KEY=${INPUT_KEY:-$RANDOM_KEY}
 
+# Ask for JDownloader 2 Mode
+echo -e "\n${YELLOW}Step 3c: JDownloader 2 Configuration${NC}"
+echo "1) Standard Mode (VNC Web Interface + Optional MyJDownloader)"
+echo "2) Headless Mode (No Web/VNC, Saves RAM, REQUIRES MyJDownloader Account)"
+read -p "Select Mode [1/2] (Default: 1): " JD_MODE
+
+JD_HEADLESS=0
+JD_EMAIL=""
+JD_PASSWORD=""
+JD_DEVICE="JDownloader-Docker"
+
+if [ "$JD_MODE" == "2" ]; then
+    echo -e "${BLUE}Headless Mode Selected. You MUST provide MyJDownloader credentials.${NC}"
+    JD_HEADLESS=1
+
+    while [ -z "$JD_EMAIL" ]; do
+        read -p "Enter MyJDownloader Email: " JD_EMAIL
+    done
+
+    while [ -z "$JD_PASSWORD" ]; do
+        read -s -p "Enter MyJDownloader Password: " JD_PASSWORD
+        echo ""
+    done
+
+    read -p "Enter Device Name [JDownloader-Docker]: " INPUT_DEVICE
+    JD_DEVICE=${INPUT_DEVICE:-JDownloader-Docker}
+else
+    echo -e "${BLUE}Standard Mode Selected.${NC}"
+fi
+
 # Set Downloads Folder
 DOWNLOADS_FOLDER="$USER_HOME/downloads"
 echo -e "\nSetting downloads folder to: ${BLUE}$DOWNLOADS_FOLDER${NC}"
@@ -119,6 +149,12 @@ DOCKER_NETWORK=nginx_network
 # Security
 SECRET_ENCRYPTION_KEY=$HOMARR_KEY
 RPC_SECRET=$RPC_SECRET
+
+# JDownloader Configuration
+JDOWNLOADER_HEADLESS=$JD_HEADLESS
+MYJDOWNLOADER_EMAIL=$JD_EMAIL
+MYJDOWNLOADER_PASSWORD=$JD_PASSWORD
+MYJDOWNLOADER_DEVICE_NAME=$JD_DEVICE
 EOL
 
 # Fix permissions for .env so regular user can read it
@@ -136,13 +172,14 @@ mkdir -p configs/qbittorrent
 mkdir -p configs/aria2
 mkdir -p configs/homarr
 mkdir -p configs/jellyfin
+mkdir -p configs/jdownloader
+mkdir -p configs/profilarr
 mkdir -p mount
 mkdir -p logs
 mkdir -p scripts
 
 # Make scripts executable
 chmod +x scripts/*.sh 2>/dev/null || true
-chown -R "$CURRENT_USER:$CURRENT_USER" configs logs scripts
 
 # Fix Log Permissions (Crucial for Docker containers running as non-root)
 # qBittorrent (user 1000) needs to write to this folder
@@ -174,23 +211,8 @@ EOF
      fi
  fi
 
- # Ensure JDownloader 2 Event Scripter config exists
- mkdir -p configs/jdownloader/cfg
- if [ ! -f configs/jdownloader/cfg/org.jdownloader.extensions.eventscripter.EventScripterExtension.scripts.json ]; then
-     echo "Creating default JDownloader Event Scripter config..."
-     cat <<EOF > configs/jdownloader/cfg/org.jdownloader.extensions.eventscripter.EventScripterExtension.scripts.json
-[
-  {
-    "eventTrigger": "ON_PACKAGE_FINISHED",
-    "enabled": true,
-    "name": "Rclone Upload",
-    "script": "var script = \"/scripts/jd_manage.sh\";\nvar path = package.getDownloadFolder();\nvar name = package.getName();\ncallAsync(function() {}, script, name, path);",
-    "eventTriggerSettings": {},
-    "id": 1698745632145
-  }
-]
-EOF
- fi
+# Fix ownership of all configs
+chown -R "$CURRENT_USER:$CURRENT_USER" configs logs scripts
 
 # 6. Rclone Config Setup
 echo -e "\n${GREEN}[5/7] Setting up Rclone Config...${NC}"
@@ -341,6 +363,67 @@ elif [ "$INSTALL_MODE" == "3" ]; then
 else
     echo -e "\n${GREEN}Starting ALL services...${NC}"
     docker compose up -d
+fi
+
+# 8. Post-Deployment Automation (JDownloader)
+# We check if JDownloader is running and inject the automation script if needed.
+if docker compose ps --services --filter "status=running" | grep -q "jdownloader"; then
+    echo -e "\n${BLUE}[Auto-Config] Checking JDownloader Automation...${NC}"
+    JD_CONFIG_DIR="configs/jdownloader/cfg"
+    JD_CONFIG_FILE="$JD_CONFIG_DIR/org.jdownloader.settings.GraphicalUserInterfaceSettings.json"
+    JD_SCRIPT_FILE="$JD_CONFIG_DIR/org.jdownloader.extensions.eventscripter.EventScripterExtension.scripts.json"
+
+    # Wait for JDownloader to initialize its config files (max 60 seconds)
+    echo -n "Waiting for JDownloader to initialize..."
+    for i in $(seq 1 12); do
+        if [ -f "$JD_CONFIG_FILE" ]; then
+            echo -e " ${GREEN}Done.${NC}"
+
+            # Check if automation script needs injection
+            if [ ! -f "$JD_SCRIPT_FILE" ]; then
+                echo "Injecting Rclone Upload script..."
+
+                cat <<EOF > "$JD_SCRIPT_FILE"
+[
+  {
+    "eventTrigger": "ON_PACKAGE_FINISHED",
+    "enabled": true,
+    "name": "Rclone Upload",
+    "script": "var script = \"/scripts/jd_manage.sh\";\nvar path = package.getDownloadFolder();\nvar name = package.getName();\ncallAsync(function() {}, script, name, path);",
+    "eventTriggerSettings": {},
+    "id": 1698745632145
+  }
+]
+EOF
+
+                # Auto-enable Event Scripter Extension
+                JD_EXT_FILE="$JD_CONFIG_DIR/org.jdownloader.extensions.eventscripter.EventScripterExtension.json"
+                if [ ! -f "$JD_EXT_FILE" ]; then
+                    echo '{"enabled":true}' > "$JD_EXT_FILE"
+                    echo "Auto-enabled Event Scripter Extension."
+                fi
+
+                # Fix permissions
+                chown -R "$CURRENT_USER:$CURRENT_USER" "$JD_CONFIG_DIR"
+
+                # Restart JDownloader to load the new config
+                echo "Restarting JDownloader to apply changes..."
+                docker compose restart jdownloader
+                echo -e "${GREEN}JDownloader Automation Enabled!${NC}"
+            else
+                echo -e "${GREEN}Automation script already active.${NC}"
+            fi
+            break
+        fi
+
+        echo -n "."
+        sleep 5
+    done
+
+    if [ ! -f "$JD_CONFIG_FILE" ]; then
+        echo -e "\n${YELLOW}JDownloader is taking too long to start.${NC}"
+        echo "Automation skipped. You can run 'sudo ./scripts/init_jd.sh' later."
+    fi
 fi
 
 echo -e "\n${GREEN}[7/7] Deployment Complete!${NC}"
