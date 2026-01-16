@@ -317,9 +317,9 @@ JDownloader is great for downloading files from websites (Mega, Mediafire, YouTu
     *   The local files will be deleted.
 
 4.  **Troubleshooting: Extension "Install Now"**
-    *   If you see a button saying **"Install Now"** next to "Event Scripter" in the settings:
-    *   **Click it!** JDownloader requires this one-time manual click to download the extension file.
-    *   Once installed, the automation script ("Rclone Upload") will automatically activate.
+    *   The deployment script now **automatically pre-installs** all necessary extensions.
+    *   You should **NOT** see an "Install Now" button.
+    *   If the "Event Scripter" is not working, just verify it is **Enabled** in the Settings.
 
 5.  **Troubleshooting: VNC / WebUI Errors**
     *   If the Web Interface (`:5800`) is blank or crashes, it is often due to font issues.

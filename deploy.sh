@@ -229,6 +229,24 @@ if [ ! -f "configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json
     echo '{"defaultdownloadfolder" : "/downloads"}' > configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json
 fi
 
+# 3. Inject Pre-Installed Extensions (Snapshot Deployment)
+# The user provided a zip of pre-installed extensions to bypass the manual "Install Now" step.
+EXTENSIONS_URL="https://github.com/tvkk0539/Rclone-Arr-Setup-with-jules-customised/releases/download/v1/jdownloader_extensions.zip"
+EXTENSIONS_DIR="configs/jdownloader/extensions"
+
+echo -e "${BLUE}Downloading JDownloader Extensions...${NC}"
+mkdir -p "$EXTENSIONS_DIR"
+
+if wget -qO /tmp/jd_extensions.zip "$EXTENSIONS_URL"; then
+    echo "Extracting extensions..."
+    # We use -j to flatten the directory structure and extract only .jar files
+    unzip -o -q -j /tmp/jd_extensions.zip "*.jar" -d "$EXTENSIONS_DIR"
+    rm /tmp/jd_extensions.zip
+    echo -e "${GREEN}Extensions pre-installed successfully.${NC}"
+else
+    echo -e "${YELLOW}Failed to download extensions. You may need to install them manually.${NC}"
+fi
+
 # Fix specific permissions for JDownloader (Container runs as user 1000)
 chown -R 1000:1000 configs/jdownloader
 
