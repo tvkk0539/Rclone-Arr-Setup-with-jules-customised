@@ -502,10 +502,18 @@ if docker compose ps --services --filter "status=running" | grep -q "jdownloader
   {
     "eventTrigger": "ON_PACKAGE_FINISHED",
     "enabled": true,
-    "name": "Rclone Upload",
-    "script": "var script = \"/scripts/jd_manage.sh\";\nvar path = package.getDownloadFolder();\nvar name = package.getName();\ncallAsync(function() {}, script, name, path);",
+    "name": "Rclone Upload (Standard)",
+    "script": "var script = \"/scripts/jd_manage.sh\";\nvar path = package.getDownloadFolder();\nvar name = package.getName();\nvar archives = package.getArchives();\nif (archives.length == 0) {\n    callAsync(function() {}, script, name, path);\n}",
     "eventTriggerSettings": {},
     "id": 1698745632145
+  },
+  {
+    "eventTrigger": "ON_ARCHIVE_EXTRACTED",
+    "enabled": true,
+    "name": "Rclone Upload (Extracted)",
+    "script": "var script = \"/scripts/jd_manage.sh\";\nvar package = archive.getDownloadLinks()[0].getPackage();\nvar path = package.getDownloadFolder();\nvar name = package.getName();\ncallAsync(function() {}, script, name, path);",
+    "eventTriggerSettings": {},
+    "id": 1698745632146
   }
 ]
 EOF
