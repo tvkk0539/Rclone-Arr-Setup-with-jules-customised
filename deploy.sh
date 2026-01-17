@@ -126,13 +126,6 @@ fi
 # Set Downloads Folder
 DOWNLOADS_FOLDER="$USER_HOME/downloads"
 
-# Safety Check: Prevent using /root for downloads
-if [[ "$DOWNLOADS_FOLDER" == "/root/"* ]]; then
-    echo -e "${RED}WARNING: Using /root for downloads causes Permission Denied errors!${NC}"
-    echo -e "Switching to recommended path: $USER_HOME/downloads"
-    DOWNLOADS_FOLDER="$USER_HOME/downloads"
-fi
-
 echo -e "\nSetting downloads folder to: ${BLUE}$DOWNLOADS_FOLDER${NC}"
 mkdir -p "$DOWNLOADS_FOLDER"
 chown -R "$CURRENT_USER:$CURRENT_USER" "$DOWNLOADS_FOLDER"
