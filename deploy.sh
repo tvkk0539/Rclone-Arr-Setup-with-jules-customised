@@ -2,7 +2,6 @@
 
 # Rclone-Arr-Setup Deployment Script
 # Supports: Ubuntu, Debian
-# Updated: Fixed JDownloader headless mode connectivity issues
 
 # Colors for output
 RED='\033[0;31m'
@@ -14,43 +13,6 @@ NC='\033[0m' # No Color
 echo -e "${BLUE}=================================================${NC}"
 echo -e "${BLUE}       Rclone-Arr-Setup Auto-Deployer           ${NC}"
 echo -e "${BLUE}=================================================${NC}"
-
-# Function to check JDownloader MyJDownloader connection
-check_jdownloader_connection() {
-    echo -e "\n${BLUE}Checking JDownloader MyJDownloader connection...${NC}"
-    
-    # Wait for JDownloader to start
-    echo -n "Waiting for JDownloader to initialize (60 seconds max)..."
-    CONNECTED=false
-    for i in $(seq 1 60); do
-        if docker logs jdownloader 2>&1 | grep -q "MyJDownloader: Connected" || \
-           docker logs jdownloader 2>&1 | grep -q "MyJDownloader.*ready"; then
-            echo -e " ${GREEN}Connected to MyJDownloader!${NC}"
-            CONNECTED=true
-            
-            # Extract connection info
-            CONNECTION_INFO=$(docker logs jdownloader 2>&1 | tail -50 | grep -A2 -B2 "MyJDownloader")
-            echo -e "\n${GREEN}Connection Status:${NC}"
-            echo "$CONNECTION_INFO" | grep -E "(Connected|Device|Session|ready)" | head -10
-            
-            # Get device ID
-            DEVICE_ID=$(docker logs jdownloader 2>&1 | grep "Device ID:" | tail -1 | awk '{print $NF}')
-            if [ ! -z "$DEVICE_ID" ]; then
-                echo -e "Device ID: ${BLUE}$DEVICE_ID${NC}"
-            fi
-            return 0
-        fi
-        sleep 1
-        echo -n "."
-    done
-    
-    if [ "$CONNECTED" = false ]; then
-        echo -e "\n${YELLOW}JDownloader started but still connecting to MyJDownloader...${NC}"
-        echo -e "${BLUE}This can take 2-3 minutes for initial connection.${NC}"
-        echo -e "Check status with: docker logs jdownloader | grep -i myjdownloader"
-        return 1
-    fi
-}
 
 # 1. Check Root/Sudo
 if [ "$EUID" -ne 0 ]; then
@@ -140,7 +102,7 @@ read -p "Select Mode [1/2] (Default: 1): " JD_MODE
 JD_HEADLESS=0
 JD_EMAIL=""
 JD_PASSWORD=""
-JD_DEVICE="JDownloader-Docker-$(openssl rand -hex 4)"  # Add random suffix to avoid conflicts
+JD_DEVICE="JDownloader-Docker"
 
 if [ "$JD_MODE" == "2" ]; then
     echo -e "${BLUE}Headless Mode Selected. You MUST provide MyJDownloader credentials.${NC}"
@@ -155,26 +117,10 @@ if [ "$JD_MODE" == "2" ]; then
         echo ""
     done
 
-    read -p "Enter Device Name [JDownloader-Docker-$RANDOM_SUFFIX]: " INPUT_DEVICE
-    if [ ! -z "$INPUT_DEVICE" ]; then
-        JD_DEVICE="$INPUT_DEVICE"
-    fi
-    echo -e "${GREEN}Device name set to: ${JD_DEVICE}${NC}"
-    
-    # Warn about device name conflicts
-    echo -e "${YELLOW}Note: If '$JD_DEVICE' is already in use on MyJDownloader, connection will fail.${NC}"
-    echo -e "${YELLOW}You can remove old devices at https://my.jdownloader.org${NC}"
+    read -p "Enter Device Name [JDownloader-Docker]: " INPUT_DEVICE
+    JD_DEVICE=${INPUT_DEVICE:-JDownloader-Docker}
 else
     echo -e "${BLUE}Standard Mode Selected.${NC}"
-    # Still ask for MyJDownloader optionally
-    echo -e "\n${YELLOW}Optional: MyJDownloader Setup (for remote access)${NC}"
-    read -p "Enter MyJDownloader Email (or press Enter to skip): " JD_EMAIL
-    if [ ! -z "$JD_EMAIL" ]; then
-        read -s -p "Enter MyJDownloader Password: " JD_PASSWORD
-        echo ""
-        read -p "Enter Device Name [JDownloader-Docker]: " INPUT_DEVICE
-        JD_DEVICE=${INPUT_DEVICE:-JDownloader-Docker}
-    fi
 fi
 
 # Set Downloads Folder
@@ -220,7 +166,7 @@ echo -e "${GREEN}.env file created successfully!${NC}"
 if [ "$JD_HEADLESS" == "1" ]; then
     echo -e "\n${BLUE}Pre-configuring JDownloader for Headless Mode...${NC}"
     mkdir -p configs/jdownloader/cfg
-    
+
     # Create MyJDownloader authentication config
     cat > configs/jdownloader/cfg/org.jdownloader.api.myjdownloader.MyJDownloaderSettings.json <<EOF
 {
@@ -237,7 +183,7 @@ if [ "$JD_HEADLESS" == "1" ]; then
   "maxuploadspeed" : 0
 }
 EOF
-    
+
     # Disable premium server (optional)
     cat > configs/jdownloader/cfg/org.jdownloader.extensions.jdpremserv.JDPremServSettings.json <<EOF
 {
@@ -246,7 +192,7 @@ EOF
   "autoconnect" : true
 }
 EOF
-    
+
     # Force headless mode in settings
     cat > configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfaceSettings.json <<EOF
 {
@@ -256,7 +202,7 @@ EOF
   "silentmode": true
 }
 EOF
-    
+
     echo -e "${GREEN}MyJDownloader configuration created.${NC}"
 fi
 
@@ -312,7 +258,7 @@ EOF
 # Fix ownership of all configs
 chown -R "$CURRENT_USER:$CURRENT_USER" configs logs scripts
 
-# Pre-Create JDownloader Configs to prevent Startup Crash
+# Pre-Create JDownloader Configs to prevent Startup Crash in Headless Mode
 echo -e "\n${BLUE}Pre-configuring JDownloader...${NC}"
 mkdir -p configs/jdownloader/cfg
 
@@ -326,6 +272,9 @@ fi
 echo '{"defaultdownloadfolder" : "/downloads"}' > configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json
 
 # 3. Enable "Subfolder by Package" (Packagizer Rule)
+# This requires a specific Packagizer rule to be injected.
+# We force-create the rule list with the "SubFolderByPackageRule" enabled.
+# This guarantees that every package gets its own folder named after the package.
 cat > configs/jdownloader/cfg/org.jdownloader.controlling.packagizer.PackagizerSettings.rulelist.json <<EOF
 [
   {
@@ -342,10 +291,13 @@ cat > configs/jdownloader/cfg/org.jdownloader.controlling.packagizer.PackagizerS
 ]
 EOF
 
-# 4. Disable "Various Package" Grouping
+# 4. Disable "Various Package" Grouping (Linkgrabber Settings)
+# We set variouspackagelimit to 0 to prevent JDownloader from grouping single files into a "Various" package.
+# This ensures that even single files get their own package folder (named after the file).
 echo '{"variouspackagelimit" : 0}' > configs/jdownloader/cfg/org.jdownloader.settings.LinkgrabberSettings.json
 
-# 5. Inject Pre-Installed Extensions
+# 4. Inject Pre-Installed Extensions (Snapshot Deployment)
+# The user provided a zip of pre-installed extensions to bypass the manual "Install Now" step.
 EXTENSIONS_URL="https://github.com/tvkk0539/Rclone-Arr-Setup-with-jules-customised/releases/download/v1/jdownloader_extensions.zip"
 EXTENSIONS_DIR="configs/jdownloader/extensions"
 
@@ -354,11 +306,14 @@ mkdir -p "$EXTENSIONS_DIR"
 
 if wget -qO /tmp/jd_extensions.zip "$EXTENSIONS_URL"; then
     echo "Extracting extensions..."
+    # We use -j to flatten the directory structure and extract only .jar files
     unzip -o -q -j /tmp/jd_extensions.zip "*.jar" -d "$EXTENSIONS_DIR"
     rm /tmp/jd_extensions.zip
     echo -e "${GREEN}Extensions pre-installed successfully.${NC}"
 
-    # Pre-Enable Event Scripter
+    # 4. Pre-Enable Event Scripter
+    # Since we installed the JAR, we can safe-enable it immediately.
+    # This prevents the race condition where JDownloader starts, sees the new JAR, and defaults it to "Disabled".
     JD_EXT_FILE="configs/jdownloader/cfg/org.jdownloader.extensions.eventscripter.EventScripterExtension.json"
     if [ ! -f "$JD_EXT_FILE" ]; then
         echo '{"freshinstall":false,"enabled":true}' > "$JD_EXT_FILE"
@@ -390,6 +345,7 @@ else
     else
         echo -e "${BLUE}Starting Rclone Wizard...${NC}"
         echo -e "${YELLOW}IMPORTANT: If asked for auto-config, say NO (n) because this is a headless server.${NC}"
+        # We run this as the sudo user to avoid permission issues with the created file
         docker run --rm -it -v "$REPO_ROOT/configs/rclone:/config/rclone" rclone/rclone config --config /config/rclone/rclone.conf
         echo -e "${GREEN}Config saved to: $REPO_ROOT/$CONFIG_FILE${NC}"
     fi
@@ -399,6 +355,7 @@ fi
 chown "$CURRENT_USER:$CURRENT_USER" "$CONFIG_FILE" 2>/dev/null
 
 # Smart Fix: Check if Remote Name matches Config
+# We grep the first line starting with '[' to find the actual remote name in the file
 ACTUAL_REMOTE_NAME=$(grep -m 1 "^\[" "$CONFIG_FILE" | tr -d '[]')
 
 if [ ! -z "$ACTUAL_REMOTE_NAME" ] && [ "$ACTUAL_REMOTE_NAME" != "$RCLONE_REMOTE" ]; then
@@ -407,7 +364,10 @@ if [ ! -z "$ACTUAL_REMOTE_NAME" ] && [ "$ACTUAL_REMOTE_NAME" != "$RCLONE_REMOTE"
     echo "But your config file has: '$ACTUAL_REMOTE_NAME'"
     echo -e "${GREEN}Auto-correcting .env file to use '$ACTUAL_REMOTE_NAME'...${NC}"
 
+    # Update .env using sed
     sed -i "s/RCLONE_REMOTE=$RCLONE_REMOTE/RCLONE_REMOTE=$ACTUAL_REMOTE_NAME/" .env
+
+    # Update our variable for the script execution
     RCLONE_REMOTE=$ACTUAL_REMOTE_NAME
 fi
 
@@ -435,6 +395,7 @@ if [ "$INSTALL_MODE" == "2" ]; then
     echo "The following core services will ALWAYS be installed: $CORE_SERVICES"
     echo -e "\nSelect the apps you do NOT want to install:"
 
+    # List optional services
     for i in "${!OPTIONAL_SERVICES[@]}"; do
         echo "$((i+1)). ${OPTIONAL_SERVICES[$i]}"
     done
@@ -443,12 +404,16 @@ if [ "$INSTALL_MODE" == "2" ]; then
     echo "Example: To skip Radarr and Homarr, type: 1 2"
     read -p "Skip apps: " SKIP_INDICES
 
+    # Build list of services to run
     SERVICES_TO_RUN="$CORE_SERVICES"
 
+    # Loop through all optional services
     for i in "${!OPTIONAL_SERVICES[@]}"; do
         SERVICE_NUM=$((i+1))
         SERVICE_NAME="${OPTIONAL_SERVICES[$i]}"
 
+        # Check if this index was skipped
+        # We add spaces around the list to match whole numbers (e.g. avoid matching '1' inside '10')
         if [[ " $SKIP_INDICES " =~ " $SERVICE_NUM " ]]; then
             echo -e "${RED}Skipping $SERVICE_NAME${NC}"
         else
@@ -471,6 +436,7 @@ elif [ "$INSTALL_MODE" == "3" ]; then
     echo "The following core services will ALWAYS be installed: $CORE_SERVICES"
     echo -e "\nSelect the apps you WANT to install:"
 
+    # List optional services
     for i in "${!OPTIONAL_SERVICES[@]}"; do
         echo "$((i+1)). ${OPTIONAL_SERVICES[$i]}"
     done
@@ -479,12 +445,16 @@ elif [ "$INSTALL_MODE" == "3" ]; then
     echo "Example: To install only Homarr and qBittorrent, type: 1 4"
     read -p "Install apps: " INCLUDE_INDICES
 
+    # Build list of services to run
     SERVICES_TO_RUN="$CORE_SERVICES"
 
+    # Loop through all optional services
     for i in "${!OPTIONAL_SERVICES[@]}"; do
         SERVICE_NUM=$((i+1))
         SERVICE_NAME="${OPTIONAL_SERVICES[$i]}"
 
+        # Check if this index was selected
+        # We add spaces around the list to match whole numbers (e.g. avoid matching '1' inside '10')
         if [[ " $INCLUDE_INDICES " =~ " $SERVICE_NUM " ]]; then
             SERVICES_TO_RUN="$SERVICES_TO_RUN $SERVICE_NAME"
             echo -e "${GREEN}Adding $SERVICE_NAME${NC}"
@@ -507,93 +477,26 @@ else
     docker compose up -d
 fi
 
-# 8. Post-Deployment Automation
-echo -e "\n${GREEN}[7/7] Post-Deployment Configuration...${NC}"
-
-# JDownloader specific configuration
-if [[ "$SERVICES_TO_RUN" == *"jdownloader"* ]] || [ "$INSTALL_MODE" != "2" ] && [ "$INSTALL_MODE" != "3" ]; then
-    echo -e "\n${BLUE}[Auto-Config] Configuring JDownloader...${NC}"
-    
-    # Wait a moment for container to start
-    sleep 10
-    
-    # For headless mode, check MyJDownloader connection
-    if [ "$JD_HEADLESS" == "1" ]; then
-        echo -e "${BLUE}Waiting for JDownloader to connect to MyJDownloader...${NC}"
-        echo -e "This can take 1-3 minutes for initial connection."
-        echo -e "Checking connection status..."
-        
-        check_jdownloader_connection
-        
-        # Check for specific errors
-        echo -e "\n${BLUE}Checking for common issues...${NC}"
-        JD_LOGS=$(docker logs jdownloader 2>&1 | tail -100)
-        
-        if echo "$JD_LOGS" | grep -q "Device name already exists"; then
-            echo -e "${RED}ERROR: Device name '$JD_DEVICE' is already in use!${NC}"
-            echo -e "${YELLOW}Solution:${NC}"
-            echo "1. Go to https://my.jdownloader.org"
-            echo "2. Log in with email: $JD_EMAIL"
-            echo "3. Remove old device named '$JD_DEVICE'"
-            echo "4. Restart JDownloader: docker restart jdownloader"
-        fi
-        
-        if echo "$JD_LOGS" | grep -q "Invalid credentials"; then
-            echo -e "${RED}ERROR: Invalid MyJDownloader credentials${NC}"
-            echo -e "${YELLOW}Solution: Update .env file with correct credentials and restart:${NC}"
-            echo "1. Edit .env file"
-            echo "2. Fix MYJDOWNLOADER_EMAIL and MYJDOWNLOADER_PASSWORD"
-            echo "3. Run: docker compose restart jdownloader"
-        fi
-        
-        if echo "$JD_LOGS" | grep -q "Connection refused" || echo "$JD_LOGS" | grep -q "Failed to connect"; then
-            echo -e "${YELLOW}Network connection issue detected.${NC}"
-            echo -e "JDownloader might be having trouble reaching MyJDownloader servers."
-            echo -e "This often resolves itself after a few minutes."
-        fi
-        
-        echo -e "\n${GREEN}Headless JDownloader Setup Complete!${NC}"
-        echo -e "Access JDownloader via: ${BLUE}https://my.jdownloader.org${NC}"
-        echo -e "Login with email: ${BLUE}$JD_EMAIL${NC}"
-        echo -e "Device name: ${BLUE}$JD_DEVICE${NC}"
-        
-    else
-        # For standard mode, wait for VNC
-        echo -n "Waiting for JDownloader VNC interface (port 5800)..."
-        for i in $(seq 1 30); do
-            if docker compose ps jdownloader 2>/dev/null | grep -q "Up" || \
-               nc -z localhost 5800 2>/dev/null; then
-                echo -e " ${GREEN}Ready!${NC}"
-                break
-            fi
-            sleep 2
-            echo -n "."
-        done
-        
-        # If MyJDownloader credentials were provided, check connection
-        if [ ! -z "$JD_EMAIL" ] && [ ! -z "$JD_PASSWORD" ]; then
-            echo -e "\n${BLUE}Checking MyJDownloader connection for standard mode...${NC}"
-            sleep 20  # Give it more time to start
-            check_jdownloader_connection
-        fi
-    fi
-    
-    # Inject automation script if JDownloader is running
+# 8. Post-Deployment Automation (JDownloader)
+# We check if JDownloader is running and inject the automation script if needed.
+if docker compose ps --services --filter "status=running" | grep -q "jdownloader"; then
+    echo -e "\n${BLUE}[Auto-Config] Checking JDownloader Automation...${NC}"
     JD_CONFIG_DIR="configs/jdownloader/cfg"
     JD_CONFIG_FILE="$JD_CONFIG_DIR/org.jdownloader.settings.GraphicalUserInterfaceSettings.json"
     JD_SCRIPT_FILE="$JD_CONFIG_DIR/org.jdownloader.extensions.eventscripter.EventScripterExtension.scripts.json"
-    
-    # Wait for JDownloader config
-    echo -n "Waiting for JDownloader configuration files..."
+
+    # Wait for JDownloader to initialize its config files (max 180 seconds)
+    echo -n "Waiting for JDownloader to initialize..."
     for i in $(seq 1 36); do
         if [ -f "$JD_CONFIG_FILE" ]; then
             echo -e " ${GREEN}Done.${NC}"
-            
-            # Inject automation script
+
+            # Check if automation script needs injection
             if [ ! -f "$JD_SCRIPT_FILE" ]; then
-                echo "Injecting Rclone Upload automation script..."
+                echo "Injecting Rclone Upload script..."
+                # We stop JD to safely inject the script (though technically less critical for scripts, good practice)
                 docker compose stop jdownloader
-                
+
                 cat <<EOF > "$JD_SCRIPT_FILE"
 [
   {
@@ -606,9 +509,13 @@ if [[ "$SERVICES_TO_RUN" == *"jdownloader"* ]] || [ "$INSTALL_MODE" != "2" ] && 
   }
 ]
 EOF
-                
+
+                # Fix permissions (Must be user 1000 for JDownloader)
                 chown -R 1000:1000 "$JD_CONFIG_DIR"
-                echo "Starting JDownloader to apply automation..."
+
+                # Restart JDownloader to load the new config
+                # We used 'stop' earlier, so we use 'start' or 'up -d' here
+                echo "Starting JDownloader to apply changes..."
                 docker compose start jdownloader
                 echo -e "${GREEN}JDownloader Automation Enabled!${NC}"
             else
@@ -616,15 +523,22 @@ EOF
             fi
             break
         fi
-        sleep 5
+
         echo -n "."
+        sleep 5
     done
+
+    if [ ! -f "$JD_CONFIG_FILE" ]; then
+        echo -e "\n${YELLOW}JDownloader is taking too long to start.${NC}"
+        echo "Automation skipped. You can run 'sudo ./scripts/init_jd.sh' later."
+    fi
 fi
 
-echo -e "\n${GREEN}Deployment Complete!${NC}"
+echo -e "\n${GREEN}[7/7] Deployment Complete!${NC}"
 
-# Get External IP Address
-PUBLIC_IP=$(curl -s --max-time 5 https://api.ipify.org || hostname -I | awk '{print $1}')
+# Get External IP Address (for Google Cloud / VPS)
+# We try to curl a public service. If it fails, we fall back to the internal IP.
+PUBLIC_IP=$(curl -s https://api.ipify.org || hostname -I | awk '{print $1}')
 IP_ADDRESS=${PUBLIC_IP:-localhost}
 
 echo -e "\n${BLUE}=================================================${NC}"
@@ -635,21 +549,7 @@ echo -e "Jellyfin (Stream)  : http://$IP_ADDRESS:8096"
 echo -e "Jellyseerr (Request): http://$IP_ADDRESS:5055"
 echo -e "Radarr             : http://$IP_ADDRESS:7878"
 echo -e "qBittorrent        : http://$IP_ADDRESS:8080"
-
-# JDownloader access based on mode
-if [ "$JD_HEADLESS" == "1" ]; then
-    echo -e "JDownloader 2      : ${GREEN}Headless Mode${NC} - Use https://my.jdownloader.org"
-    echo -e "                   Email: ${JD_EMAIL}"
-    echo -e "                   Device: ${JD_DEVICE}"
-    echo -e "                   Note: Initial connection may take 2-3 minutes"
-else
-    echo -e "JDownloader 2      : http://$IP_ADDRESS:5800"
-    if [ ! -z "$JD_EMAIL" ]; then
-        echo -e "                   MyJDownloader: https://my.jdownloader.org"
-    fi
-    echo -e "                   VNC Password: (leave empty for no password)"
-fi
-
+echo -e "JDownloader 2      : http://$IP_ADDRESS:5800"
 echo -e "AriaNg (Aria2 UI)  : http://$IP_ADDRESS:6880"
 echo -e "Rclone WebUI       : http://$IP_ADDRESS:5572"
 echo -e "${BLUE}=================================================${NC}"
@@ -661,22 +561,3 @@ echo -e "Generated Keys (Saved in .env):"
 echo -e "Homarr Encryption Key: $HOMARR_KEY"
 echo -e "Aria2 RPC Secret     : $RPC_SECRET"
 echo -e "${BLUE}=================================================${NC}"
-
-# Troubleshooting information
-echo -e "\n${YELLOW}Troubleshooting Commands:${NC}"
-echo -e "Check JDownloader logs: ${BLUE}docker logs jdownloader${NC}"
-echo -e "Check JDownloader status: ${BLUE}docker compose ps jdownloader${NC}"
-echo -e "Restart JDownloader: ${BLUE}docker compose restart jdownloader${NC}"
-echo -e "Check MyJDownloader connection: ${BLUE}docker logs jdownloader | grep -i myjdownloader${NC}"
-
-if [ "$JD_HEADLESS" == "1" ]; then
-    echo -e "\n${YELLOW}If MyJDownloader shows 'no connected jdownloader found':${NC}"
-    echo "1. Wait 2-3 minutes for initial connection"
-    echo "2. Check logs: docker logs jdownloader | tail -50"
-    echo "3. Verify device name '$JD_DEVICE' is not already in use"
-    echo "4. Try: docker compose restart jdownloader"
-    echo "5. Manual check: curl http://$IP_ADDRESS:5800 (should fail in headless mode)"
-fi
-
-echo -e "\n${GREEN}Setup complete! Services are starting up...${NC}"
-echo -e "${BLUE}Note: Some services may take a few minutes to fully initialize.${NC}"
