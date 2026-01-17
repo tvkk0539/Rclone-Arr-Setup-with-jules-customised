@@ -224,8 +224,9 @@ if [ ! -f "configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfa
     echo '{"trayiconenabled": false}' > configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfaceSettings.json
 fi
 
-# 2. Set Default Download Path to /downloads
-echo '{"defaultdownloadfolder" : "/downloads"}' > configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json
+# 2. Set Default Download Path to /downloads and Force Subfolder
+# We explicitly enable 'subfolderbypackageenabled' to tell JD2 to respect the Packagizer rule.
+echo '{"defaultdownloadfolder" : "/downloads", "subfolderbypackageenabled" : true}' > configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json
 
 # 3. Enable "Subfolder by Package" (Packagizer Rule)
 # This requires a specific Packagizer rule to be injected.
@@ -456,6 +457,7 @@ if docker compose ps --services --filter "status=running" | grep -q "jdownloader
     JD_CONFIG_DIR="configs/jdownloader/cfg"
     JD_CONFIG_FILE="$JD_CONFIG_DIR/org.jdownloader.settings.GraphicalUserInterfaceSettings.json"
     JD_SCRIPT_FILE="$JD_CONFIG_DIR/org.jdownloader.extensions.eventscripter.EventScripterExtension.scripts.json"
+    JD_RULE_FILE="$JD_CONFIG_DIR/org.jdownloader.controlling.packagizer.PackagizerSettings.rulelist.json"
 
     # Wait for JDownloader to initialize its config files (max 180 seconds)
     echo -n "Waiting for JDownloader to initialize..."
@@ -463,13 +465,29 @@ if docker compose ps --services --filter "status=running" | grep -q "jdownloader
         if [ -f "$JD_CONFIG_FILE" ]; then
             echo -e " ${GREEN}Done.${NC}"
 
-            # Check if automation script needs injection
+            # Check if we need to inject scripts OR reinforce the Packagizer rule
+            NEEDS_RESTART=0
+
+            # 1. Check Automation Script
             if [ ! -f "$JD_SCRIPT_FILE" ]; then
                 echo "Injecting Rclone Upload script..."
-                # We stop JD to safely inject the script (though technically less critical for scripts, good practice)
+                NEEDS_RESTART=1
+            fi
+
+            # 2. Check Packagizer Rule (Reinforcement)
+            # Sometimes JD resets this on fresh install, so we check if our rule is present.
+            if [ ! -f "$JD_RULE_FILE" ] || ! grep -q "SubFolderByPackageRule" "$JD_RULE_FILE"; then
+                echo "Reinforcing Subfolder by Package Rule..."
+                NEEDS_RESTART=1
+            fi
+
+            if [ "$NEEDS_RESTART" == "1" ]; then
+                # We stop JD to safely inject configs
                 docker compose stop jdownloader
 
-                cat <<EOF > "$JD_SCRIPT_FILE"
+                # Inject Script
+                if [ ! -f "$JD_SCRIPT_FILE" ]; then
+                    cat <<EOF > "$JD_SCRIPT_FILE"
 [
   {
     "eventTrigger": "ON_PACKAGE_FINISHED",
@@ -481,17 +499,34 @@ if docker compose ps --services --filter "status=running" | grep -q "jdownloader
   }
 ]
 EOF
+                fi
+
+                # Inject/Reinforce Packagizer Rule
+                cat > "$JD_RULE_FILE" <<EOF
+[
+  {
+    "id": "SubFolderByPackageRule",
+    "enabled": true,
+    "name": "Create Subfolder by Packagename",
+    "matchAlwaysFilter": {
+      "enabled": true
+    },
+    "downloadDestination": "<jd:packagename>",
+    "iconKey": "folder",
+    "staticRule": true
+  }
+]
+EOF
 
                 # Fix permissions (Must be user 1000 for JDownloader)
                 chown -R 1000:1000 "$JD_CONFIG_DIR"
 
                 # Restart JDownloader to load the new config
-                # We used 'stop' earlier, so we use 'start' or 'up -d' here
                 echo "Starting JDownloader to apply changes..."
                 docker compose start jdownloader
-                echo -e "${GREEN}JDownloader Automation Enabled!${NC}"
+                echo -e "${GREEN}JDownloader Automation & Safety Rules Enforced!${NC}"
             else
-                echo -e "${GREEN}Automation script already active.${NC}"
+                echo -e "${GREEN}Automation and Rules verified active.${NC}"
             fi
             break
         fi
