@@ -203,6 +203,14 @@ EOF
 }
 EOF
 
+    # ADD THIS FOR HEADLESS MODE - Force Packagizer to be active
+    cat > configs/jdownloader/cfg/org.jdownloader.controlling.packagizer.PackagizerExtension.json <<EOF
+{
+  "enabled": true,
+  "freshinstall": false
+}
+EOF
+
     echo -e "${GREEN}MyJDownloader configuration created.${NC}"
 fi
 
@@ -269,12 +277,35 @@ if [ ! -f "configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfa
 fi
 
 # 2. Set Default Download Path to /downloads
-echo '{"defaultdownloadfolder" : "/downloads"}' > configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json
+cat > configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json <<EOF
+{
+  "defaultdownloadfolder" : "/downloads",
+  "downloadfolderhistory" : "/downloads",
+  "packagizerenabled" : true
+}
+EOF
 
-# 3. Enable "Subfolder by Package" (Packagizer Rule)
-# This requires a specific Packagizer rule to be injected.
-# We force-create the rule list with the "SubFolderByPackageRule" enabled.
-# This guarantees that every package gets its own folder named after the package.
+# 3. Create Packagizer Settings file (MUST EXIST for Packagizer to work)
+cat > configs/jdownloader/cfg/org.jdownloader.controlling.packagizer.PackagizerSettings.json <<EOF
+{
+  "enabled": true,
+  "rulelist": [
+    {
+      "id": "SubFolderByPackageRule",
+      "enabled": true,
+      "name": "Create Subfolder by Packagename",
+      "matchAlwaysFilter": {
+        "enabled": true
+      },
+      "downloadDestination": "<jd:packagename>",
+      "iconKey": "folder",
+      "staticRule": true
+    }
+  ]
+}
+EOF
+
+# 4. Also create the legacy rulelist file for compatibility
 cat > configs/jdownloader/cfg/org.jdownloader.controlling.packagizer.PackagizerSettings.rulelist.json <<EOF
 [
   {
@@ -291,12 +322,12 @@ cat > configs/jdownloader/cfg/org.jdownloader.controlling.packagizer.PackagizerS
 ]
 EOF
 
-# 4. Disable "Various Package" Grouping (Linkgrabber Settings)
+# 5. Disable "Various Package" Grouping (Linkgrabber Settings)
 # We set variouspackagelimit to 0 to prevent JDownloader from grouping single files into a "Various" package.
 # This ensures that even single files get their own package folder (named after the file).
 echo '{"variouspackagelimit" : 0}' > configs/jdownloader/cfg/org.jdownloader.settings.LinkgrabberSettings.json
 
-# 4. Inject Pre-Installed Extensions (Snapshot Deployment)
+# 6. Inject Pre-Installed Extensions (Snapshot Deployment)
 # The user provided a zip of pre-installed extensions to bypass the manual "Install Now" step.
 EXTENSIONS_URL="https://github.com/tvkk0539/Rclone-Arr-Setup-with-jules-customised/releases/download/v1/jdownloader_extensions.zip"
 EXTENSIONS_DIR="configs/jdownloader/extensions"
@@ -311,7 +342,7 @@ if wget -qO /tmp/jd_extensions.zip "$EXTENSIONS_URL"; then
     rm /tmp/jd_extensions.zip
     echo -e "${GREEN}Extensions pre-installed successfully.${NC}"
 
-    # 4. Pre-Enable Event Scripter
+    # 6. Pre-Enable Event Scripter
     # Since we installed the JAR, we can safe-enable it immediately.
     # This prevents the race condition where JDownloader starts, sees the new JAR, and defaults it to "Disabled".
     JD_EXT_FILE="configs/jdownloader/cfg/org.jdownloader.extensions.eventscripter.EventScripterExtension.json"
