@@ -252,7 +252,21 @@ EOF
 # This ensures that even single files get their own package folder (named after the file).
 echo '{"variouspackagelimit" : 0}' > configs/jdownloader/cfg/org.jdownloader.settings.LinkgrabberSettings.json
 
-# 4. Inject Pre-Installed Extensions (Snapshot Deployment)
+# 4. Inject MyJDownloader Credentials (Headless Mode Fix)
+if [ "$JD_HEADLESS" == "1" ]; then
+    echo "Injecting MyJDownloader credentials..."
+    cat > configs/jdownloader/cfg/org.jdownloader.api.myjdownloader.MyJDownloaderSettings.json <<EOF
+{
+  "email" : "$JD_EMAIL",
+  "password" : "$JD_PASSWORD",
+  "devicename" : "$JD_DEVICE",
+  "autoconnectenabledv2" : true,
+  "lastlocalport" : 5800
+}
+EOF
+fi
+
+# 5. Inject Pre-Installed Extensions (Snapshot Deployment)
 # The user provided a zip of pre-installed extensions to bypass the manual "Install Now" step.
 EXTENSIONS_URL="https://github.com/tvkk0539/Rclone-Arr-Setup-with-jules-customised/releases/download/v1/jdownloader_extensions.zip"
 EXTENSIONS_DIR="configs/jdownloader/extensions"
