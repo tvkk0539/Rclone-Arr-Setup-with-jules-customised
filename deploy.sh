@@ -225,8 +225,9 @@ if [ ! -f "configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfa
     echo '{"trayiconenabled": false}' > configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfaceSettings.json
 fi
 
-# 2. Set Default Download Path to /downloads
-echo '{"defaultdownloadfolder" : "/downloads"}' > configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json
+# 2. Set Default Download Path to /downloads & Enable Subfolder Isolation (Legacy Method)
+# We enable this AND the Packagizer rule below to be 100% sure.
+echo '{"defaultdownloadfolder" : "/downloads", "subfolderbypackageenabled" : true}' > configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json
 
 # 3. Enable "Subfolder by Package" (Packagizer Rule)
 # This requires a specific Packagizer rule to be injected.
