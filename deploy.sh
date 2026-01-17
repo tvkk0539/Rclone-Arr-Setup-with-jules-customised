@@ -125,6 +125,14 @@ fi
 
 # Set Downloads Folder
 DOWNLOADS_FOLDER="$USER_HOME/downloads"
+
+# Safety Check: Prevent using /root for downloads
+if [[ "$DOWNLOADS_FOLDER" == "/root/"* ]]; then
+    echo -e "${RED}WARNING: Using /root for downloads causes Permission Denied errors!${NC}"
+    echo -e "Switching to recommended path: $USER_HOME/downloads"
+    DOWNLOADS_FOLDER="$USER_HOME/downloads"
+fi
+
 echo -e "\nSetting downloads folder to: ${BLUE}$DOWNLOADS_FOLDER${NC}"
 mkdir -p "$DOWNLOADS_FOLDER"
 chown -R "$CURRENT_USER:$CURRENT_USER" "$DOWNLOADS_FOLDER"
@@ -254,8 +262,9 @@ echo '{"variouspackagelimit" : 0}' > configs/jdownloader/cfg/org.jdownloader.set
 
 # 4. Inject MyJDownloader Credentials (Headless Mode Fix)
 if [ "$JD_HEADLESS" == "1" ]; then
-    echo "Injecting MyJDownloader credentials..."
-    cat > configs/jdownloader/cfg/org.jdownloader.api.myjdownloader.MyJDownloaderSettings.json <<EOF
+    echo -e "${BLUE}Injecting MyJDownloader credentials for device: $JD_DEVICE...${NC}"
+    CRED_FILE="configs/jdownloader/cfg/org.jdownloader.api.myjdownloader.MyJDownloaderSettings.json"
+    cat > "$CRED_FILE" <<EOF
 {
   "email" : "$JD_EMAIL",
   "password" : "$JD_PASSWORD",
@@ -264,6 +273,9 @@ if [ "$JD_HEADLESS" == "1" ]; then
   "lastlocalport" : 5800
 }
 EOF
+    # Secure the file immediately
+    chmod 600 "$CRED_FILE"
+    chown 1000:1000 "$CRED_FILE"
 fi
 
 # 5. Inject Pre-Installed Extensions (Snapshot Deployment)
