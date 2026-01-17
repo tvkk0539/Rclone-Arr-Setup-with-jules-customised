@@ -111,3 +111,68 @@ For the curious developer, here is how we made the script "Robust":
 *   **Direct API calls:**
     *   Instead of running `rclone move ...` (which requires configuring Rclone *inside* the JDownloader container), we talk to the **Rclone Container** via HTTP.
     *   This keeps the JDownloader container clean and lightweight.
+
+---
+
+## 6. Case Study: The "Subfolder by Package" Fix (Before vs After)
+
+One of the most critical parts of this automation is ensuring that **every download gets its own folder**. We call this "Isolation".
+Without isolation, our "Delete" script is dangerous.
+
+### The Problem: The "Fake" Checkbox
+In the JDownloader Web Interface, there is a setting called **"Subfolder by Package"**.
+We tried to enable this via the deployment script by setting `subfolderbypackageenabled: true`.
+**It failed.**
+
+**Why?**
+We discovered that "Subfolder by Package" is **not just a setting**. It is actually a secret **Packagizer Rule**.
+*   When you check the box in the UI, JDownloader creates a rule behind the scenes.
+*   When running in "Headless Mode" (no GUI), just flipping the "true" switch wasn't enough to create the rule.
+
+### The Solution: Direct Rule Injection
+
+Instead of trying to "Check the box", we decided to **manually inject the Brain Rule** directly into JDownloader's configuration.
+
+#### The Code Change (Before vs After)
+
+**Before (The Failed Attempt):**
+We tried to change the `GeneralSettings` file. JDownloader ignored this because it lacked the logic to execute it.
+```bash
+# This did NOTHING in Headless Mode
+echo '{"subfolderbypackageenabled" : true}' > configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json
+```
+
+**After (The Success):**
+We injected the actual logic into the `PackagizerSettings.rulelist.json` file. This is the file JDownloader reads to decide *how* to handle packages.
+
+```bash
+# We define a STATIC RULE: "Always move downloads to <jd:packagename>"
+cat > configs/jdownloader/cfg/org.jdownloader.controlling.packagizer.PackagizerSettings.rulelist.json <<EOF
+[
+  {
+    "id": "SubFolderByPackageRule",
+    "enabled": true,
+    "name": "Create Subfolder by Packagename",
+    "matchAlwaysFilter": { "enabled": true },
+    "downloadDestination": "<jd:packagename>",
+    "staticRule": true
+  }
+]
+EOF
+```
+
+### The "Missing Checkbox" Mystery
+After applying this fix, users noticed something strange:
+> *"The automation works perfect! But when I check the Web UI, the 'Subfolder' checkbox is still empty!"*
+
+**Why does this happen?**
+*   **The Checkbox (UI)**: This is just a toggle switch for the user. It doesn't know we modified the engine files directly.
+*   **The Rule (Engine)**: The engine reads our injected rule file and executes it 100% of the time.
+
+**Analogy:**
+Imagine a light switch on the wall (The Checkbox).
+We went into the ceiling and hard-wired the light to be ON (The Rule).
+The light is **ON**, even though the switch on the wall is still in the "OFF" position.
+
+**Result:**
+The system is **Safe**, **Robust**, and **Permanent**, even if the UI looks different.
