@@ -224,12 +224,17 @@ if [ ! -f "configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfa
     echo '{"trayiconenabled": false}' > configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfaceSettings.json
 fi
 
-# 2. Set Default Download Path to /downloads
-if [ ! -f "configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json" ]; then
-    echo '{"defaultdownloadfolder" : "/downloads"}' > configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json
-fi
+# 2. Set Default Download Path to /downloads & Enable Subfolder Isolation
+# We force-create this file to ensure "Subfolder by Package" is enabled.
+# This ensures every download gets its own folder, which is critical for the "Upload -> Delete" workflow.
+echo '{"defaultdownloadfolder" : "/downloads", "subfolderbypackageenabled" : true}' > configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json
 
-# 3. Inject Pre-Installed Extensions (Snapshot Deployment)
+# 3. Disable "Various Package" Grouping (Linkgrabber Settings)
+# We set variouspackagelimit to 0 to prevent JDownloader from grouping single files into a "Various" package.
+# This ensures that even single files get their own package folder (named after the file).
+echo '{"variouspackagelimit" : 0}' > configs/jdownloader/cfg/org.jdownloader.settings.LinkgrabberSettings.json
+
+# 4. Inject Pre-Installed Extensions (Snapshot Deployment)
 # The user provided a zip of pre-installed extensions to bypass the manual "Install Now" step.
 EXTENSIONS_URL="https://github.com/tvkk0539/Rclone-Arr-Setup-with-jules-customised/releases/download/v1/jdownloader_extensions.zip"
 EXTENSIONS_DIR="configs/jdownloader/extensions"
