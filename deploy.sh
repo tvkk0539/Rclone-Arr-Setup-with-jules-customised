@@ -162,6 +162,50 @@ chown "$CURRENT_USER:$CURRENT_USER" .env
 
 echo -e "${GREEN}.env file created successfully!${NC}"
 
+# Pre-configure JDownloader for headless mode BEFORE container starts
+if [ "$JD_HEADLESS" == "1" ]; then
+    echo -e "\n${BLUE}Pre-configuring JDownloader for Headless Mode...${NC}"
+    mkdir -p configs/jdownloader/cfg
+
+    # Create MyJDownloader authentication config
+    cat > configs/jdownloader/cfg/org.jdownloader.api.myjdownloader.MyJDownloaderSettings.json <<EOF
+{
+  "autoconnectenabledv2" : true,
+  "email" : "${JD_EMAIL}",
+  "password" : "${JD_PASSWORD}",
+  "devicename" : "${JD_DEVICE}",
+  "autoconnectenabled" : true,
+  "directconnectmode" : "LAN",
+  "connectipandport" : "",
+  "lastlocalport" : 3129,
+  "debugenabled" : false,
+  "maxdownloadspeed" : 0,
+  "maxuploadspeed" : 0
+}
+EOF
+
+    # Disable premium server (optional)
+    cat > configs/jdownloader/cfg/org.jdownloader.extensions.jdpremserv.JDPremServSettings.json <<EOF
+{
+  "premiumhosterlist" : "",
+  "enabled" : false,
+  "autoconnect" : true
+}
+EOF
+
+    # Force headless mode in settings
+    cat > configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfaceSettings.json <<EOF
+{
+  "trayiconenabled": false,
+  "forcewindowstate": "normal",
+  "mainframevisible": false,
+  "silentmode": true
+}
+EOF
+
+    echo -e "${GREEN}MyJDownloader configuration created.${NC}"
+fi
+
 # 5. Directory Structure
 echo -e "\n${GREEN}[4/7] Creating Directory Structure...${NC}"
 mkdir -p configs/rclone
