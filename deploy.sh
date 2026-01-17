@@ -249,7 +249,7 @@ if wget -qO /tmp/jd_extensions.zip "$EXTENSIONS_URL"; then
     # This prevents the race condition where JDownloader starts, sees the new JAR, and defaults it to "Disabled".
     JD_EXT_FILE="configs/jdownloader/cfg/org.jdownloader.extensions.eventscripter.EventScripterExtension.json"
     if [ ! -f "$JD_EXT_FILE" ]; then
-        echo '{"enabled":true}' > "$JD_EXT_FILE"
+        echo '{"freshinstall":false,"enabled":true}' > "$JD_EXT_FILE"
         echo "Auto-enabled Event Scripter Extension."
     fi
 else
