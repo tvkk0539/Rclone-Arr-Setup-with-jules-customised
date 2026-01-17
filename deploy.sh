@@ -241,7 +241,7 @@ cat > configs/jdownloader/cfg/org.jdownloader.controlling.packagizer.PackagizerS
     "matchAlwaysFilter": {
       "enabled": true
     },
-    "downloadDestination": "<jd:packagename>",
+    "downloadDestination": "/downloads/<jd:packagename>",
     "iconKey": "folder",
     "staticRule": true
   }
@@ -511,7 +511,7 @@ EOF
     "matchAlwaysFilter": {
       "enabled": true
     },
-    "downloadDestination": "<jd:packagename>",
+    "downloadDestination": "/downloads/<jd:packagename>",
     "iconKey": "folder",
     "staticRule": true
   }
