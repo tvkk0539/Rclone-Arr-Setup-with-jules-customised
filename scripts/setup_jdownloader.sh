@@ -3,8 +3,27 @@
 # JDownloader 2 Configuration Helper Script
 
 pre_configure_jdownloader() {
+    local JD_EMAIL="$1"
+    local JD_PASSWORD="$2"
+    local JD_DEVICE="$3"
+
     echo -e "\n${BLUE}Pre-configuring JDownloader...${NC}"
     mkdir -p configs/jdownloader/cfg
+
+    # 0. Inject MyJDownloader Credentials (Headless Mode Support)
+    # The container often fails to connect on first run if credentials are only in env vars.
+    # Injecting them directly into the config file is more reliable.
+    if [ ! -z "$JD_EMAIL" ] && [ ! -z "$JD_PASSWORD" ]; then
+        echo -e "${BLUE}Injecting MyJDownloader credentials...${NC}"
+        cat > configs/jdownloader/cfg/org.jdownloader.api.myjdownloader.MyJDownloaderSettings.json <<EOF
+{
+  "email": "$JD_EMAIL",
+  "password": "$JD_PASSWORD",
+  "devicename": "$JD_DEVICE",
+  "autoconnectenabledv2": true
+}
+EOF
+    fi
 
     # 1. Create GUI Settings file (Prevents 'jq: error' during container init)
     if [ ! -f "configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfaceSettings.json" ]; then

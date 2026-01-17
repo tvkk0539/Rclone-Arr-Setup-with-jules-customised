@@ -217,8 +217,8 @@ chown -R "$CURRENT_USER:$CURRENT_USER" configs logs scripts
 # Source the JDownloader setup script
 source ./scripts/setup_jdownloader.sh
 
-# Run JDownloader pre-configuration
-pre_configure_jdownloader
+# Run JDownloader pre-configuration (Inject credentials if Headless Mode)
+pre_configure_jdownloader "$JD_EMAIL" "$JD_PASSWORD" "$JD_DEVICE"
 
 # 6. Rclone Config Setup
 echo -e "\n${GREEN}[5/7] Setting up Rclone Config...${NC}"
