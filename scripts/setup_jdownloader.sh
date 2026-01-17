@@ -32,24 +32,25 @@ EOF
     fi
 
     # 2. Set Default Download Path to /downloads
-    echo '{"defaultdownloadfolder" : "/downloads"}' > configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json
+    # We explicitly DISABLE the internal 'subfolderbypackage' logic to prevent conflicts with our custom Packagizer rule.
+    echo '{"defaultdownloadfolder" : "/downloads", "subfolderbypackageenabled" : false}' > configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json
 
     # 3. Enable "Subfolder by Package" (Packagizer Rule)
     # This requires a specific Packagizer rule to be injected.
-    # We force-create the rule list with the "SubFolderByPackageRule" enabled.
-    # This guarantees that every package gets its own folder named after the package.
+    # We force-create the rule list with the "CustomSubfolderRule" enabled.
+    # IMPORTANT: We use the ABSOLUTE path /downloads/<jd:packagename> to ensure Headless mode honors it.
     cat > configs/jdownloader/cfg/org.jdownloader.controlling.packagizer.PackagizerSettings.rulelist.json <<EOF
 [
   {
-    "id": "SubFolderByPackageRule",
+    "id": "CustomSubfolderRule",
     "enabled": true,
     "name": "Create Subfolder by Packagename",
     "matchAlwaysFilter": {
       "enabled": true
     },
-    "downloadDestination": "<jd:packagename>",
+    "downloadDestination": "/downloads/<jd:packagename>",
     "iconKey": "folder",
-    "staticRule": true
+    "staticRule": false
   }
 ]
 EOF
@@ -145,6 +146,38 @@ EOF
         if [ ! -f "$JD_CONFIG_FILE" ]; then
             echo -e "\n${YELLOW}JDownloader is taking too long to start.${NC}"
             echo "Automation skipped."
+        fi
+
+        # SAFETY CHECK: Ensure the Packagizer Rule still exists
+        # JDownloader sometimes overwrites the rule list on first initialization.
+        JD_RULE_FILE="configs/jdownloader/cfg/org.jdownloader.controlling.packagizer.PackagizerSettings.rulelist.json"
+        if ! grep -q "CustomSubfolderRule" "$JD_RULE_FILE"; then
+             echo -e "${YELLOW}Safety Rule Missing! Re-injecting Packagizer Rule...${NC}"
+
+             docker compose stop jdownloader
+
+             cat > "$JD_RULE_FILE" <<EOF
+[
+  {
+    "id": "CustomSubfolderRule",
+    "enabled": true,
+    "name": "Create Subfolder by Packagename",
+    "matchAlwaysFilter": {
+      "enabled": true
+    },
+    "downloadDestination": "/downloads/<jd:packagename>",
+    "iconKey": "folder",
+    "staticRule": false
+  }
+]
+EOF
+             # Fix permissions again
+             chown -R 1000:1000 "configs/jdownloader/cfg"
+
+             echo -e "${GREEN}Restarting JDownloader to apply Safety Rule...${NC}"
+             docker compose start jdownloader
+        else
+             echo -e "${GREEN}Packagizer Safety Rule Confirmed active.${NC}"
         fi
     fi
 }
