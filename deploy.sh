@@ -224,12 +224,30 @@ if [ ! -f "configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfa
     echo '{"trayiconenabled": false}' > configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfaceSettings.json
 fi
 
-# 2. Set Default Download Path to /downloads & Enable Subfolder Isolation
-# We force-create this file to ensure "Subfolder by Package" is enabled.
-# This ensures every download gets its own folder, which is critical for the "Upload -> Delete" workflow.
-echo '{"defaultdownloadfolder" : "/downloads", "subfolderbypackageenabled" : true}' > configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json
+# 2. Set Default Download Path to /downloads
+echo '{"defaultdownloadfolder" : "/downloads"}' > configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json
 
-# 3. Disable "Various Package" Grouping (Linkgrabber Settings)
+# 3. Enable "Subfolder by Package" (Packagizer Rule)
+# This requires a specific Packagizer rule to be injected.
+# We force-create the rule list with the "SubFolderByPackageRule" enabled.
+# This guarantees that every package gets its own folder named after the package.
+cat > configs/jdownloader/cfg/org.jdownloader.controlling.packagizer.PackagizerSettings.rulelist.json <<EOF
+[
+  {
+    "id": "SubFolderByPackageRule",
+    "enabled": true,
+    "name": "Create Subfolder by Packagename",
+    "matchAlwaysFilter": {
+      "enabled": true
+    },
+    "downloadDestination": "<jd:packagename>",
+    "iconKey": "folder",
+    "staticRule": true
+  }
+]
+EOF
+
+# 4. Disable "Various Package" Grouping (Linkgrabber Settings)
 # We set variouspackagelimit to 0 to prevent JDownloader from grouping single files into a "Various" package.
 # This ensures that even single files get their own package folder (named after the file).
 echo '{"variouspackagelimit" : 0}' > configs/jdownloader/cfg/org.jdownloader.settings.LinkgrabberSettings.json
