@@ -355,7 +355,35 @@ Since JDownloader is currently running, it might not detect the new configuratio
 
 Once confirmed, JDownloader will behave like qBittorrent: **Download -> Auto Upload -> Auto Delete**.
 
-### Step C.3: Better Remote Access & Headless Mode
+### Step C.3: JDownloader Safety & Isolation (How it protects your data)
+
+We have configured JDownloader with strict "Isolation Rules" to make the **Upload -> Delete** process 100% safe. Here is exactly how it works:
+
+**1. The "Subfolder Force" Rule**
+*   **Setting:** `subfolderbypackageenabled: true`
+*   **What it does:** Every single download MUST have its own folder.
+*   **Why?** Our cleanup script deletes the folder after uploading. If 5 movies were in the same folder, and one finished, the script might accidentally delete the others. This rule prevents that.
+    *   *Example:* Downloading "Matrix" -> Goes to `/downloads/Matrix/`. The script only uploads/deletes `/downloads/Matrix/`.
+
+**2. The "No Various" Rule (The Fail-Safe)**
+*   **Setting:** `variouspackagelimit: 0`
+*   **What it does:** It forbids JDownloader from grouping single files into a generic folder called "Various".
+*   **Scenario:** You add a file link but forget to give it a name.
+    *   *Old Behavior:* It goes into `/downloads/Various/`. If you had 10 items there, and one finished, the "Delete" script would kill the whole "Various" folder.
+    *   *New Behavior:* JDownloader is forced to create a package using the **filename**.
+    *   *Result:* Your file `cool_video.mp4` goes into `/downloads/cool_video.mp4/`. It is perfectly isolated and safe to upload/delete on its own.
+
+**3. The Usenet / NZB Scenario**
+You asked: *"What happens if I download a Usenet NZB with 100 parts (part01, part02...)? Do I get 100 folders?"*
+*   **Answer:** No. JDownloader is smart.
+*   **How it works:** It detects that `part01`...`part100` belong to the same archive. It groups them into **One Package** named after the NZB file.
+*   **Result:** You get **one folder** (e.g., `/downloads/My_Usenet_Movie/`) containing all 100 parts.
+*   **After Download:** The system extracts the video, uploads the final file, and deletes the `/downloads/My_Usenet_Movie/` folder.
+
+**Summary:**
+Whether you give a name, forget a name, or download a 100-part Usenet file—**every item gets its own private folder**. This guarantees that the automation script never accidentally deletes an active download.
+
+### Step C.4: Better Remote Access & Headless Mode
 
 JDownloader 2 in Docker is technically a desktop app running via VNC (screen recording).
 This can be laggy on mobile. You have two options to improve this:
