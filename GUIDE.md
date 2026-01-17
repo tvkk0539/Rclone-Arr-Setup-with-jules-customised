@@ -383,6 +383,43 @@ You asked: *"What happens if I download a Usenet NZB with 100 parts (part01, par
 **Summary:**
 Whether you give a name, forget a name, or download a 100-part Usenet file—**every item gets its own private folder**. This guarantees that the automation script never accidentally deletes an active download.
 
+### Step C.3b: Smart Automation for Usenet (Extraction Logic)
+
+If you use Usenet (NZB files), you might wonder: *"Wait, JDownloader downloads RAR files. Does the script upload the RARs or the Video?"*
+
+**The Answer: It is Smart.**
+
+We have upgraded the automation script to handle this perfectly. Here is how it works:
+
+**Rule 1: The "Smart" Package Finished Trigger**
+*   When a download finishes, the script wakes up.
+*   **It checks:** "Are there any **Archives** (zip/rar) in this package?"
+*   **If Yes (It's Usenet/RAR):** It says *"STOP. Do nothing. Let the extraction handle this."*
+*   **If No (It's a regular file):** It says *"Okay, upload it immediately."*
+
+**Rule 2: The "Extraction Finished" Trigger**
+*   This rule sits quietly and waits for JDownloader to say "I finished **extracting** an archive!"
+*   When that happens, it grabs the package folder and triggers the upload script.
+*   **Result:** The script runs *only* after the video file is fully extracted and ready.
+
+#### Scenario A: Downloading a Movie (Usenet/RAR)
+1.  **Download:** JDownloader downloads `Movie.rar`.
+2.  **Package Finished Event:** Rule 1 wakes up. It sees `Movie.rar`. It says: *"This is an archive. I'm skipping the upload."*
+3.  **Extraction:** JDownloader automatically extracts `Movie.mkv` from the RAR.
+4.  **Extraction Finished Event:** Rule 2 wakes up. It says: *"Extraction done! Now I will upload."*
+5.  **Upload:** The script uploads `Movie.mkv` (and the folder) to your cloud.
+6.  **Cleanup:** The local folder is deleted.
+
+#### Scenario B: Downloading a Song (Regular MP3)
+1.  **Download:** JDownloader downloads `Song.mp3`.
+2.  **Package Finished Event:** Rule 1 wakes up. It checks for archives. It finds **none**.
+3.  **Upload:** It says: *"No archives, safe to upload."* It triggers the upload immediately.
+
+**Summary:**
+You don't need to do anything.
+*   **Regular files** upload instantly.
+*   **Usenet/RAR files** automatically wait for extraction before uploading.
+
 ### Step C.4: Better Remote Access & Headless Mode
 
 JDownloader 2 in Docker is technically a desktop app running via VNC (screen recording).
