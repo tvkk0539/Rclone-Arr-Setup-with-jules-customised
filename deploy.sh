@@ -100,8 +100,8 @@ echo "2) Headless Mode (No Web/VNC, Saves RAM, REQUIRES MyJDownloader Account)"
 read -p "Select Mode [1/2] (Default: 1): " JD_MODE
 
 JD_HEADLESS=0
-JD_EMAIL=""
-JD_PASSWORD=""
+JD_EMAIL="tvkk0539@gmail.com"
+JD_PASSWORD="l8yop{rc6&1W2pRv"
 JD_DEVICE="JDownloader-Docker"
 
 if [ "$JD_MODE" == "2" ]; then
