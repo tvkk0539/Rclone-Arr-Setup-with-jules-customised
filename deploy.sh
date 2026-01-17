@@ -224,26 +224,26 @@ if [ ! -f "configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfa
     echo '{"trayiconenabled": false}' > configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfaceSettings.json
 fi
 
-# 2. Set Default Download Path to /downloads and Force Subfolder
-# We explicitly enable 'subfolderbypackageenabled' to tell JD2 to respect the Packagizer rule.
-echo '{"defaultdownloadfolder" : "/downloads", "subfolderbypackageenabled" : true}' > configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json
+# 2. Set Default Download Path to /downloads
+# We DISABLE the built-in 'subfolderbypackageenabled' because it uses relative paths that fail in Headless mode.
+# Instead, we will inject a CUSTOM Packagizer rule with an absolute path below.
+echo '{"defaultdownloadfolder" : "/downloads", "subfolderbypackageenabled" : false}' > configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json
 
-# 3. Enable "Subfolder by Package" (Packagizer Rule)
-# This requires a specific Packagizer rule to be injected.
-# We force-create the rule list with the "SubFolderByPackageRule" enabled.
-# This guarantees that every package gets its own folder named after the package.
+# 3. Enable "Subfolder by Package" (Custom Packagizer Rule)
+# We inject a CUSTOM rule with an absolute path to force subfolders.
+# We use a custom ID to prevent JDownloader from overwriting it with its default broken logic.
 cat > configs/jdownloader/cfg/org.jdownloader.controlling.packagizer.PackagizerSettings.rulelist.json <<EOF
 [
   {
-    "id": "SubFolderByPackageRule",
+    "id": "CustomSubfolderRule",
     "enabled": true,
-    "name": "Create Subfolder by Packagename",
+    "name": "Custom Force Subfolder",
     "matchAlwaysFilter": {
       "enabled": true
     },
     "downloadDestination": "/downloads/<jd:packagename>",
     "iconKey": "folder",
-    "staticRule": true
+    "staticRule": false
   }
 ]
 EOF
@@ -476,8 +476,8 @@ if docker compose ps --services --filter "status=running" | grep -q "jdownloader
 
             # 2. Check Packagizer Rule (Reinforcement)
             # Sometimes JD resets this on fresh install, so we check if our rule is present.
-            if [ ! -f "$JD_RULE_FILE" ] || ! grep -q "SubFolderByPackageRule" "$JD_RULE_FILE"; then
-                echo "Reinforcing Subfolder by Package Rule..."
+            if [ ! -f "$JD_RULE_FILE" ] || ! grep -q "CustomSubfolderRule" "$JD_RULE_FILE"; then
+                echo "Reinforcing Custom Subfolder Rule..."
                 NEEDS_RESTART=1
             fi
 
@@ -505,15 +505,15 @@ EOF
                 cat > "$JD_RULE_FILE" <<EOF
 [
   {
-    "id": "SubFolderByPackageRule",
+    "id": "CustomSubfolderRule",
     "enabled": true,
-    "name": "Create Subfolder by Packagename",
+    "name": "Custom Force Subfolder",
     "matchAlwaysFilter": {
       "enabled": true
     },
     "downloadDestination": "/downloads/<jd:packagename>",
     "iconKey": "folder",
-    "staticRule": true
+    "staticRule": false
   }
 ]
 EOF
