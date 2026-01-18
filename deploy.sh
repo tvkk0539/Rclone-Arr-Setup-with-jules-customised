@@ -218,6 +218,7 @@ mkdir -p configs/homarr
 mkdir -p configs/jellyfin
 mkdir -p configs/jdownloader
 mkdir -p configs/profilarr
+mkdir -p configs/parfix
 mkdir -p mount
 mkdir -p logs
 mkdir -p scripts

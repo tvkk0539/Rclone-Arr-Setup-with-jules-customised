@@ -230,8 +230,10 @@ services:
       - "5001:5000"
     environment:
       - DOWNLOAD_ROOT=/data/downloads
+      - CONFIG_FILE=/config/config.json
     volumes:
       - ${DOWNLOADS_FOLDER}:/data/downloads
+      - ${MEDIA_SERVER_ROOT}/configs/parfix:/config
       - ${MEDIA_SERVER_ROOT}/configs/rclone:/root/.config/rclone
     restart: unless-stopped
     deploy:
