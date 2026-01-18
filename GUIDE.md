@@ -620,6 +620,7 @@ Use this list to know which port does what, and copy the code below to open them
 | **Aria2 RPC** | `6800` | **Backend API**. Do NOT open in browser (used internally). |
 | **Rclone WebUI** | `5572` | **Cloud Manager**. See your Google Drive files. |
 | **Profilarr** | `6868` | **Profile Manager**. Advanced settings. |
+| **ParFix** | `5001` | **Archive Utility**. Fix broken downloads. |
 
 ### GCP Firewall Command
 When creating your Firewall Rule in Google Cloud Console:
@@ -628,7 +629,7 @@ When creating your Firewall Rule in Google Cloud Console:
 3.  **Source ranges**: `0.0.0.0/0`
 4.  **Protocols and ports**: Paste exactly this list:
     ```
-    7575,8096,5055,7878,8080,5800,9696,6880,5572,6868
+    7575,8096,5055,7878,8080,9696,6880,5572,6868,5001
     ```
 
 ---

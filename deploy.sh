@@ -382,7 +382,7 @@ fi
 
 # Service Selection Logic
 CORE_SERVICES="rclone"
-OPTIONAL_SERVICES=("homarr" "radarr" "prowlarr" "qbittorrent" "aria2" "ariang" "jellyseerr" "profilarr" "jellyfin" "jdownloader")
+OPTIONAL_SERVICES=("homarr" "radarr" "prowlarr" "qbittorrent" "aria2" "ariang" "jellyseerr" "profilarr" "jellyfin" "jdownloader" "parfix")
 
 echo -e "\n${BLUE}Installation Mode:${NC}"
 echo "1) Full Installation (Install Everything)"
@@ -560,6 +560,7 @@ echo -e "qBittorrent        : http://$IP_ADDRESS:8080"
 echo -e "JDownloader 2      : http://$IP_ADDRESS:5800"
 echo -e "AriaNg (Aria2 UI)  : http://$IP_ADDRESS:6880"
 echo -e "Rclone WebUI       : http://$IP_ADDRESS:5572"
+echo -e "ParFix (Archive Tool): http://$IP_ADDRESS:5001"
 echo -e "${BLUE}=================================================${NC}"
 echo -e "Login Credentials:"
 echo -e "qBittorrent : admin / adminadmin"
