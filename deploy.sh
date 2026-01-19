@@ -125,6 +125,7 @@ fi
 
 # Set Downloads Folder
 DOWNLOADS_FOLDER="$USER_HOME/downloads"
+
 echo -e "\nSetting downloads folder to: ${BLUE}$DOWNLOADS_FOLDER${NC}"
 mkdir -p "$DOWNLOADS_FOLDER"
 chown -R "$CURRENT_USER:$CURRENT_USER" "$DOWNLOADS_FOLDER"
@@ -213,6 +214,93 @@ EOF
 
 # Fix ownership of all configs
 chown -R "$CURRENT_USER:$CURRENT_USER" configs logs scripts
+
+# Pre-Create JDownloader Configs to prevent Startup Crash in Headless Mode
+echo -e "\n${BLUE}Pre-configuring JDownloader...${NC}"
+mkdir -p configs/jdownloader/cfg
+
+# 1. Create GUI Settings file (Prevents 'jq: error' during container init)
+if [ ! -f "configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfaceSettings.json" ]; then
+    # We disable the tray icon to prevent the "Tray isn't supported" error on startup
+    echo '{"trayiconenabled": false}' > configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfaceSettings.json
+fi
+
+# 2. Set Default Download Path to /downloads & Enable Subfolder Isolation (Legacy Method)
+# We enable this AND the Packagizer rule below to be 100% sure.
+echo '{"defaultdownloadfolder" : "/downloads", "subfolderbypackageenabled" : true}' > configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json
+
+# 3. Enable "Subfolder by Package" (Packagizer Rule)
+# This requires a specific Packagizer rule to be injected.
+# We force-create the rule list with the "SubFolderByPackageRule" enabled.
+# This guarantees that every package gets its own folder named after the package.
+cat > configs/jdownloader/cfg/org.jdownloader.controlling.packagizer.PackagizerSettings.rulelist.json <<EOF
+[
+  {
+    "id": "SubFolderByPackageRule",
+    "enabled": true,
+    "name": "Create Subfolder by Packagename",
+    "matchAlwaysFilter": {
+      "enabled": true
+    },
+    "downloadDestination": "<jd:packagename>",
+    "iconKey": "folder",
+    "staticRule": true
+  }
+]
+EOF
+
+# 4. Disable "Various Package" Grouping (Linkgrabber Settings)
+# We set variouspackagelimit to 0 to prevent JDownloader from grouping single files into a "Various" package.
+# This ensures that even single files get their own package folder (named after the file).
+echo '{"variouspackagelimit" : 0}' > configs/jdownloader/cfg/org.jdownloader.settings.LinkgrabberSettings.json
+
+# 4. Inject MyJDownloader Credentials (Headless Mode Fix)
+if [ "$JD_HEADLESS" == "1" ]; then
+    echo -e "${BLUE}Injecting MyJDownloader credentials for device: $JD_DEVICE...${NC}"
+    CRED_FILE="configs/jdownloader/cfg/org.jdownloader.api.myjdownloader.MyJDownloaderSettings.json"
+    cat > "$CRED_FILE" <<EOF
+{
+  "email" : "$JD_EMAIL",
+  "password" : "$JD_PASSWORD",
+  "devicename" : "$JD_DEVICE",
+  "autoconnectenabledv2" : true,
+  "lastlocalport" : 5800
+}
+EOF
+    # Secure the file immediately
+    chmod 600 "$CRED_FILE"
+    chown 1000:1000 "$CRED_FILE"
+fi
+
+# 5. Inject Pre-Installed Extensions (Snapshot Deployment)
+# The user provided a zip of pre-installed extensions to bypass the manual "Install Now" step.
+EXTENSIONS_URL="https://github.com/tvkk0539/Rclone-Arr-Setup-with-jules-customised/releases/download/v1/jdownloader_extensions.zip"
+EXTENSIONS_DIR="configs/jdownloader/extensions"
+
+echo -e "${BLUE}Downloading JDownloader Extensions...${NC}"
+mkdir -p "$EXTENSIONS_DIR"
+
+if wget -qO /tmp/jd_extensions.zip "$EXTENSIONS_URL"; then
+    echo "Extracting extensions..."
+    # We use -j to flatten the directory structure and extract only .jar files
+    unzip -o -q -j /tmp/jd_extensions.zip "*.jar" -d "$EXTENSIONS_DIR"
+    rm /tmp/jd_extensions.zip
+    echo -e "${GREEN}Extensions pre-installed successfully.${NC}"
+
+    # 4. Pre-Enable Event Scripter
+    # Since we installed the JAR, we can safe-enable it immediately.
+    # This prevents the race condition where JDownloader starts, sees the new JAR, and defaults it to "Disabled".
+    JD_EXT_FILE="configs/jdownloader/cfg/org.jdownloader.extensions.eventscripter.EventScripterExtension.json"
+    if [ ! -f "$JD_EXT_FILE" ]; then
+        echo '{"freshinstall":false,"enabled":true}' > "$JD_EXT_FILE"
+        echo "Auto-enabled Event Scripter Extension."
+    fi
+else
+    echo -e "${YELLOW}Failed to download extensions. You may need to install them manually.${NC}"
+fi
+
+# Fix specific permissions for JDownloader (Container runs as user 1000)
+chown -R 1000:1000 configs/jdownloader
 
 # 6. Rclone Config Setup
 echo -e "\n${GREEN}[5/7] Setting up Rclone Config...${NC}"
@@ -373,15 +461,17 @@ if docker compose ps --services --filter "status=running" | grep -q "jdownloader
     JD_CONFIG_FILE="$JD_CONFIG_DIR/org.jdownloader.settings.GraphicalUserInterfaceSettings.json"
     JD_SCRIPT_FILE="$JD_CONFIG_DIR/org.jdownloader.extensions.eventscripter.EventScripterExtension.scripts.json"
 
-    # Wait for JDownloader to initialize its config files (max 60 seconds)
+    # Wait for JDownloader to initialize its config files (max 180 seconds)
     echo -n "Waiting for JDownloader to initialize..."
-    for i in $(seq 1 12); do
+    for i in $(seq 1 36); do
         if [ -f "$JD_CONFIG_FILE" ]; then
             echo -e " ${GREEN}Done.${NC}"
 
             # Check if automation script needs injection
             if [ ! -f "$JD_SCRIPT_FILE" ]; then
                 echo "Injecting Rclone Upload script..."
+                # We stop JD to safely inject the script (though technically less critical for scripts, good practice)
+                docker compose stop jdownloader
 
                 cat <<EOF > "$JD_SCRIPT_FILE"
 [
@@ -396,19 +486,13 @@ if docker compose ps --services --filter "status=running" | grep -q "jdownloader
 ]
 EOF
 
-                # Auto-enable Event Scripter Extension
-                JD_EXT_FILE="$JD_CONFIG_DIR/org.jdownloader.extensions.eventscripter.EventScripterExtension.json"
-                if [ ! -f "$JD_EXT_FILE" ]; then
-                    echo '{"enabled":true}' > "$JD_EXT_FILE"
-                    echo "Auto-enabled Event Scripter Extension."
-                fi
-
-                # Fix permissions
-                chown -R "$CURRENT_USER:$CURRENT_USER" "$JD_CONFIG_DIR"
+                # Fix permissions (Must be user 1000 for JDownloader)
+                chown -R 1000:1000 "$JD_CONFIG_DIR"
 
                 # Restart JDownloader to load the new config
-                echo "Restarting JDownloader to apply changes..."
-                docker compose restart jdownloader
+                # We used 'stop' earlier, so we use 'start' or 'up -d' here
+                echo "Starting JDownloader to apply changes..."
+                docker compose start jdownloader
                 echo -e "${GREEN}JDownloader Automation Enabled!${NC}"
             else
                 echo -e "${GREEN}Automation script already active.${NC}"
