@@ -184,25 +184,6 @@ if [ "$JD_HEADLESS" == "1" ]; then
 }
 EOF
 
-    # Disable premium server (optional)
-    cat > configs/jdownloader/cfg/org.jdownloader.extensions.jdpremserv.JDPremServSettings.json <<EOF
-{
-  "premiumhosterlist" : "",
-  "enabled" : false,
-  "autoconnect" : true
-}
-EOF
-
-    # Force headless mode in settings
-    cat > configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfaceSettings.json <<EOF
-{
-  "trayiconenabled": false,
-  "forcewindowstate": "normal",
-  "mainframevisible": false,
-  "silentmode": true
-}
-EOF
-
     echo -e "${GREEN}MyJDownloader configuration created.${NC}"
 fi
 
@@ -258,71 +239,6 @@ EOF
 
 # Fix ownership of all configs
 chown -R "$CURRENT_USER:$CURRENT_USER" configs logs scripts
-
-# Pre-Create JDownloader Configs to prevent Startup Crash in Headless Mode
-echo -e "\n${BLUE}Pre-configuring JDownloader...${NC}"
-mkdir -p configs/jdownloader/cfg
-
-# 1. Create GUI Settings file (Prevents 'jq: error' during container init)
-if [ ! -f "configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfaceSettings.json" ]; then
-    # We disable the tray icon to prevent the "Tray isn't supported" error on startup
-    echo '{"trayiconenabled": false}' > configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfaceSettings.json
-fi
-
-# 2. Set Default Download Path to /downloads
-echo '{"defaultdownloadfolder" : "/downloads"}' > configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json
-
-# 3. Enable "Subfolder by Package" (Packagizer Rule)
-# This requires a specific Packagizer rule to be injected.
-# We force-create the rule list with the "SubFolderByPackageRule" enabled.
-# This guarantees that every package gets its own folder named after the package.
-cat > configs/jdownloader/cfg/org.jdownloader.controlling.packagizer.PackagizerSettings.rulelist.json <<EOF
-[
-  {
-    "id": "SubFolderByPackageRule",
-    "enabled": true,
-    "name": "Create Subfolder by Packagename",
-    "matchAlwaysFilter": {
-      "enabled": true
-    },
-    "downloadDestination": "<jd:packagename>",
-    "iconKey": "folder",
-    "staticRule": true
-  }
-]
-EOF
-
-# 4. Disable "Various Package" Grouping (Linkgrabber Settings)
-# We set variouspackagelimit to 0 to prevent JDownloader from grouping single files into a "Various" package.
-# This ensures that even single files get their own package folder (named after the file).
-echo '{"variouspackagelimit" : 0}' > configs/jdownloader/cfg/org.jdownloader.settings.LinkgrabberSettings.json
-
-# 4. Inject Pre-Installed Extensions (Snapshot Deployment)
-# The user provided a zip of pre-installed extensions to bypass the manual "Install Now" step.
-EXTENSIONS_URL="https://github.com/tvkk0539/Rclone-Arr-Setup-with-jules-customised/releases/download/v1/jdownloader_extensions.zip"
-EXTENSIONS_DIR="configs/jdownloader/extensions"
-
-echo -e "${BLUE}Downloading JDownloader Extensions...${NC}"
-mkdir -p "$EXTENSIONS_DIR"
-
-if wget -qO /tmp/jd_extensions.zip "$EXTENSIONS_URL"; then
-    echo "Extracting extensions..."
-    # We use -j to flatten the directory structure and extract only .jar files
-    unzip -o -q -j /tmp/jd_extensions.zip "*.jar" -d "$EXTENSIONS_DIR"
-    rm /tmp/jd_extensions.zip
-    echo -e "${GREEN}Extensions pre-installed successfully.${NC}"
-
-    # 4. Pre-Enable Event Scripter
-    # Since we installed the JAR, we can safe-enable it immediately.
-    # This prevents the race condition where JDownloader starts, sees the new JAR, and defaults it to "Disabled".
-    JD_EXT_FILE="configs/jdownloader/cfg/org.jdownloader.extensions.eventscripter.EventScripterExtension.json"
-    if [ ! -f "$JD_EXT_FILE" ]; then
-        echo '{"freshinstall":false,"enabled":true}' > "$JD_EXT_FILE"
-        echo "Auto-enabled Event Scripter Extension."
-    fi
-else
-    echo -e "${YELLOW}Failed to download extensions. You may need to install them manually.${NC}"
-fi
 
 # Fix specific permissions for JDownloader (Container runs as user 1000)
 chown -R 1000:1000 configs/jdownloader
