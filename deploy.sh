@@ -279,8 +279,6 @@ cat > configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json <<EO
   "autoreconnectenabled" : true,
   "maxchunksperfile" : 8,
   "maxsimultaneousdownloads" : 5,
-  "forcedownloadremoval" : true,
-  "cleanupafterdownloadaction" : "CLEANUP_IMMEDIATELY",
   "downloadspeedlimit" : 0,
   "pausespeed" : 0
 }
