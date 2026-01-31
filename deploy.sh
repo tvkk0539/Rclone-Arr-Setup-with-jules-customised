@@ -414,7 +414,8 @@ fi
 if docker compose ps --services --filter "status=running" | grep -q "jdownloader"; then
     echo -e "\n${BLUE}[Auto-Config] Checking JDownloader Automation...${NC}"
     JD_CONFIG_DIR="configs/jdownloader/cfg"
-    JD_CONFIG_FILE="$JD_CONFIG_DIR/org.jdownloader.settings.GraphicalUserInterfaceSettings.json"
+    # We check for GeneralSettings because it is always created, unlike GUI settings in headless mode
+    JD_CONFIG_FILE="$JD_CONFIG_DIR/org.jdownloader.settings.GeneralSettings.json"
     JD_SCRIPT_FILE="$JD_CONFIG_DIR/org.jdownloader.extensions.eventscripter.EventScripterExtension.scripts.json"
 
     # Wait for JDownloader to initialize its config files (max 180 seconds)
