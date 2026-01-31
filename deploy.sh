@@ -142,6 +142,7 @@ DOWNLOADS_FOLDER="$USER_HOME/downloads"
 echo -e "\nSetting downloads folder to: ${BLUE}$DOWNLOADS_FOLDER${NC}"
 mkdir -p "$DOWNLOADS_FOLDER"
 chown -R "$CURRENT_USER:$CURRENT_USER" "$DOWNLOADS_FOLDER"
+chmod -R 777 "$DOWNLOADS_FOLDER"
 
 # Create .env file
 echo -e "\n${GREEN}Generating .env file...${NC}"
@@ -265,6 +266,10 @@ if [ ! -f "configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfa
     # AND to prevent the container initialization script from crashing due to missing file.
     echo '{"trayiconenabled": false}' > configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfaceSettings.json
 fi
+
+# 2. Set Default Download Path to /downloads
+# This is essential for Docker setups so files go to the mounted volume, not the internal container storage.
+echo '{"defaultdownloadfolder" : "/downloads"}' > configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json
 
 # Fix specific permissions for JDownloader (Container runs as user 1000)
 chown -R 1000:1000 configs/jdownloader
