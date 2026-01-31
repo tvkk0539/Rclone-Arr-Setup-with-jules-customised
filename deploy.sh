@@ -83,6 +83,20 @@ RCLONE_USER=${INPUT_USER:-admin}
 read -p "Create a password for Rclone WebUI [password]: " INPUT_PASS
 RCLONE_PASS=${INPUT_PASS:-password}
 
+# Ask for Global Auto-Upload Setting
+echo -e "\n${YELLOW}Step 3c: Automation Settings${NC}"
+echo "Do you want to enable automatic Rclone uploads by default?"
+echo "If 'yes', completed downloads will be uploaded and deleted locally."
+echo "If 'no', files will stay on the local disk."
+read -p "Enable Auto-Upload? [y/n] (Default: y): " INPUT_UPLOAD
+if [[ "$INPUT_UPLOAD" =~ ^[Nn]$ ]]; then
+    RCLONE_AUTO_UPLOAD="false"
+    echo -e "${BLUE}Auto-Upload DISABLED.${NC}"
+else
+    RCLONE_AUTO_UPLOAD="true"
+    echo -e "${BLUE}Auto-Upload ENABLED.${NC}"
+fi
+
 # Generate/Ask for RPC Secret
 RANDOM_SECRET=$(openssl rand -hex 12)
 read -p "Enter RPC Secret for Aria2 (Press Enter to generate random): " INPUT_RPC
@@ -94,7 +108,7 @@ read -p "Enter Homarr Encryption Key (Press Enter to generate random): " INPUT_K
 HOMARR_KEY=${INPUT_KEY:-$RANDOM_KEY}
 
 # Ask for JDownloader 2 Mode
-echo -e "\n${YELLOW}Step 3c: JDownloader 2 Configuration${NC}"
+echo -e "\n${YELLOW}Step 3d: JDownloader 2 Configuration${NC}"
 echo "1) Standard Mode (VNC Web Interface + Optional MyJDownloader)"
 echo "2) Headless Mode (No Web/VNC, Saves RAM, REQUIRES MyJDownloader Account)"
 read -p "Select Mode [1/2] (Default: 1): " JD_MODE
@@ -142,6 +156,7 @@ DOWNLOADS_FOLDER=$DOWNLOADS_FOLDER
 RCLONE_REMOTE=$RCLONE_REMOTE
 RCLONE_USER=$RCLONE_USER
 RCLONE_PASS=$RCLONE_PASS
+RCLONE_AUTO_UPLOAD=$RCLONE_AUTO_UPLOAD
 
 # Network
 DOCKER_NETWORK=nginx_network

@@ -30,6 +30,11 @@ log_message() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
 }
 
+# 1. Global Auto-Upload Switch Check
+if [ "$RCLONE_AUTO_UPLOAD" = "false" ]; then
+    log_message "Global Switch is OFF (RCLONE_AUTO_UPLOAD=false). Skipping upload."
+    exit 0
+fi
 
 check_excluded_categories() {
     local category="$1"

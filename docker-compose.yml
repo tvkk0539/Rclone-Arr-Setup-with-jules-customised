@@ -11,6 +11,7 @@ services:
       - RCLONE_REMOTE=${RCLONE_REMOTE}
       - RCLONE_USER=${RCLONE_USER}
       - RCLONE_PASS=${RCLONE_PASS}
+      - RCLONE_AUTO_UPLOAD=${RCLONE_AUTO_UPLOAD}
       - QBIT_PASSWORD=${QBIT_PASSWORD}
     volumes:
       - ${MEDIA_SERVER_ROOT}/configs:/config  # dont add qBittorrent in host folder - qbit automatically creates one
@@ -33,6 +34,7 @@ services:
       - RCLONE_REMOTE=${RCLONE_REMOTE}
       - RCLONE_USER=${RCLONE_USER}
       - RCLONE_PASS=${RCLONE_PASS}
+      - RCLONE_AUTO_UPLOAD=${RCLONE_AUTO_UPLOAD}
       - TZ=Asia/Kolkata
     volumes:
       - ${MEDIA_SERVER_ROOT}/configs/aria2:/config
@@ -54,6 +56,7 @@ services:
       - RCLONE_REMOTE=${RCLONE_REMOTE}
       - RCLONE_USER=${RCLONE_USER}
       - RCLONE_PASS=${RCLONE_PASS}
+      - RCLONE_AUTO_UPLOAD=${RCLONE_AUTO_UPLOAD}
       - ENABLE_CJK_FONT=1
       - JDOWNLOADER_HEADLESS=${JDOWNLOADER_HEADLESS}
       - MYJDOWNLOADER_EMAIL=${MYJDOWNLOADER_EMAIL}
@@ -164,6 +167,7 @@ services:
       - RCLONE_REMOTE=${RCLONE_REMOTE}
       - RCLONE_USER=${RCLONE_USER}
       - RCLONE_PASS=${RCLONE_PASS}
+      - RCLONE_AUTO_UPLOAD=${RCLONE_AUTO_UPLOAD}
     volumes:
       - ${MEDIA_SERVER_ROOT}/configs/radarr:/config
       - ${DOWNLOADS_FOLDER}:/downloads
