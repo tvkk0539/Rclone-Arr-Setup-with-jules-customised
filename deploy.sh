@@ -255,6 +255,17 @@ EOF
 # Fix ownership of all configs
 chown -R "$CURRENT_USER:$CURRENT_USER" configs logs scripts
 
+# Pre-Create JDownloader Configs to prevent Startup Crash in Headless Mode
+echo -e "\n${BLUE}Pre-configuring JDownloader...${NC}"
+mkdir -p configs/jdownloader/cfg
+
+# 1. Create GUI Settings file (Prevents 'jq: error' during container init)
+if [ ! -f "configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfaceSettings.json" ]; then
+    # We disable the tray icon to prevent the "Tray isn't supported" error on startup
+    # AND to prevent the container initialization script from crashing due to missing file.
+    echo '{"trayiconenabled": false}' > configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfaceSettings.json
+fi
+
 # Fix specific permissions for JDownloader (Container runs as user 1000)
 chown -R 1000:1000 configs/jdownloader
 
