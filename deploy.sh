@@ -267,9 +267,24 @@ if [ ! -f "configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfa
     echo '{"trayiconenabled": false}' > configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfaceSettings.json
 fi
 
-# 2. Set Default Download Path to /downloads
-# This is essential for Docker setups so files go to the mounted volume, not the internal container storage.
-echo '{"defaultdownloadfolder" : "/downloads"}' > configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json
+# 2. Set Default Download Path & Performance Settings
+# We inject these to make JDownloader faster and more robust (like Aria2).
+# - defaultdownloadfolder: /downloads (Mount path)
+# - autoreconnectenabled: true (Retry on disconnect)
+# - maxchunksperfile: 8 (Higher speed, similar to Aria2 default)
+# - maxsimultaneousdownloads: 5 (Parallel processing)
+cat > configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json <<EOF
+{
+  "defaultdownloadfolder" : "/downloads",
+  "autoreconnectenabled" : true,
+  "maxchunksperfile" : 8,
+  "maxsimultaneousdownloads" : 5,
+  "forcedownloadremoval" : true,
+  "cleanupafterdownloadaction" : "CLEANUP_IMMEDIATELY",
+  "downloadspeedlimit" : 0,
+  "pausespeed" : 0
+}
+EOF
 
 # Fix specific permissions for JDownloader (Container runs as user 1000)
 chown -R 1000:1000 configs/jdownloader
