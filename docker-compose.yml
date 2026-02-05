@@ -222,6 +222,24 @@ services:
     ports:
       - 6868:6868
     restart: unless-stopped
+
+  parfix:
+    image: ghcr.io/tvkk0539/parfix:latest
+    container_name: parfix
+    ports:
+      - "5001:5000"
+    environment:
+      - DOWNLOAD_ROOT=/data/downloads
+      - CONFIG_FILE=/config/config.json
+    volumes:
+      - ${DOWNLOADS_FOLDER}:/data/downloads
+      - ${MEDIA_SERVER_ROOT}/configs/parfix:/config
+      - ${MEDIA_SERVER_ROOT}/configs/rclone:/root/.config/rclone
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2048M
    
 networks:
   default:

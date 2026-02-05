@@ -162,6 +162,50 @@ chown "$CURRENT_USER:$CURRENT_USER" .env
 
 echo -e "${GREEN}.env file created successfully!${NC}"
 
+# Pre-configure JDownloader for headless mode BEFORE container starts
+if [ "$JD_HEADLESS" == "1" ]; then
+    echo -e "\n${BLUE}Pre-configuring JDownloader for Headless Mode...${NC}"
+    mkdir -p configs/jdownloader/cfg
+
+    # Create MyJDownloader authentication config
+    cat > configs/jdownloader/cfg/org.jdownloader.api.myjdownloader.MyJDownloaderSettings.json <<EOF
+{
+  "autoconnectenabledv2" : true,
+  "email" : "${JD_EMAIL}",
+  "password" : "${JD_PASSWORD}",
+  "devicename" : "${JD_DEVICE}",
+  "autoconnectenabled" : true,
+  "directconnectmode" : "LAN",
+  "connectipandport" : "",
+  "lastlocalport" : 3129,
+  "debugenabled" : false,
+  "maxdownloadspeed" : 0,
+  "maxuploadspeed" : 0
+}
+EOF
+
+    # Disable premium server (optional)
+    cat > configs/jdownloader/cfg/org.jdownloader.extensions.jdpremserv.JDPremServSettings.json <<EOF
+{
+  "premiumhosterlist" : "",
+  "enabled" : false,
+  "autoconnect" : true
+}
+EOF
+
+    # Force headless mode in settings
+    cat > configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfaceSettings.json <<EOF
+{
+  "trayiconenabled": false,
+  "forcewindowstate": "normal",
+  "mainframevisible": false,
+  "silentmode": true
+}
+EOF
+
+    echo -e "${GREEN}MyJDownloader configuration created.${NC}"
+fi
+
 # 5. Directory Structure
 echo -e "\n${GREEN}[4/7] Creating Directory Structure...${NC}"
 mkdir -p configs/rclone
@@ -174,6 +218,7 @@ mkdir -p configs/homarr
 mkdir -p configs/jellyfin
 mkdir -p configs/jdownloader
 mkdir -p configs/profilarr
+mkdir -p configs/parfix
 mkdir -p mount
 mkdir -p logs
 mkdir -p scripts
@@ -338,7 +383,7 @@ fi
 
 # Service Selection Logic
 CORE_SERVICES="rclone"
-OPTIONAL_SERVICES=("homarr" "radarr" "prowlarr" "qbittorrent" "aria2" "ariang" "jellyseerr" "profilarr" "jellyfin" "jdownloader")
+OPTIONAL_SERVICES=("homarr" "radarr" "prowlarr" "qbittorrent" "aria2" "ariang" "jellyseerr" "profilarr" "jellyfin" "jdownloader" "parfix")
 
 echo -e "\n${BLUE}Installation Mode:${NC}"
 echo "1) Full Installation (Install Everything)"
@@ -458,10 +503,18 @@ if docker compose ps --services --filter "status=running" | grep -q "jdownloader
   {
     "eventTrigger": "ON_PACKAGE_FINISHED",
     "enabled": true,
-    "name": "Rclone Upload",
-    "script": "var script = \"/scripts/jd_manage.sh\";\nvar path = package.getDownloadFolder();\nvar name = package.getName();\ncallAsync(function() {}, script, name, path);",
+    "name": "Rclone Upload (Standard)",
+    "script": "var script = \"/scripts/jd_manage.sh\";\nvar path = package.getDownloadFolder();\nvar name = package.getName();\nvar archives = package.getArchives();\nif (archives.length == 0) {\n    callAsync(function() {}, script, name, path);\n}",
     "eventTriggerSettings": {},
     "id": 1698745632145
+  },
+  {
+    "eventTrigger": "ON_ARCHIVE_EXTRACTED",
+    "enabled": true,
+    "name": "Rclone Upload (Extracted)",
+    "script": "var script = \"/scripts/jd_manage.sh\";\nvar package = archive.getDownloadLinks()[0].getPackage();\nvar path = package.getDownloadFolder();\nvar name = package.getName();\ncallAsync(function() {}, script, name, path);",
+    "eventTriggerSettings": {},
+    "id": 1698745632146
   }
 ]
 EOF
@@ -508,6 +561,7 @@ echo -e "qBittorrent        : http://$IP_ADDRESS:8080"
 echo -e "JDownloader 2      : http://$IP_ADDRESS:5800"
 echo -e "AriaNg (Aria2 UI)  : http://$IP_ADDRESS:6880"
 echo -e "Rclone WebUI       : http://$IP_ADDRESS:5572"
+echo -e "ParFix (Archive Tool): http://$IP_ADDRESS:5001"
 echo -e "${BLUE}=================================================${NC}"
 echo -e "Login Credentials:"
 echo -e "qBittorrent : admin / adminadmin"
