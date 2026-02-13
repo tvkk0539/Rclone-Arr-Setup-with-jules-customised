@@ -259,6 +259,12 @@ services:
       - FB_LOG=stdout
       - FB_NOAUTH=false
       - FB_CONFIG=/config/settings.json
+    command: >
+      --port 80
+      --address 0.0.0.0
+      --database /database/filebrowser.db
+      --root /srv
+      --log stdout
     ports:
       - 8081:80
     restart: unless-stopped
