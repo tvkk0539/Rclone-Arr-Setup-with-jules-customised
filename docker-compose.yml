@@ -244,6 +244,24 @@ services:
       resources:
         limits:
           memory: 2048M
+
+  filebrowser:
+    image: filebrowser/filebrowser:latest
+    container_name: filebrowser
+    user: 1000:1000
+    volumes:
+      - ${DOWNLOADS_FOLDER}:/srv
+      - ${MEDIA_SERVER_ROOT}/configs/filebrowser/filebrowser.db:/database/filebrowser.db
+      - ${MEDIA_SERVER_ROOT}/configs/filebrowser/settings.json:/config/settings.json
+    environment:
+      - FB_DATABASE=/database/filebrowser.db
+      - FB_ROOT=/srv
+      - FB_LOG=stdout
+      - FB_NOAUTH=false
+      - FB_CONFIG=/config/settings.json
+    ports:
+      - 8081:80
+    restart: unless-stopped
    
 networks:
   default:
