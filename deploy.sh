@@ -216,6 +216,7 @@ mkdir -p configs/jellyfin
 mkdir -p configs/jdownloader
 mkdir -p configs/profilarr
 mkdir -p configs/parfix
+mkdir -p configs/filebrowser
 mkdir -p mount
 mkdir -p logs
 mkdir -p scripts
@@ -287,6 +288,25 @@ EOF
 # Fix specific permissions for JDownloader (Container runs as user 1000)
 chown -R 1000:1000 configs/jdownloader
 
+# Fix specific permissions for File Browser
+mkdir -p configs/filebrowser
+# Create DB file and settings if they don't exist to prevent Docker directory creation issue
+if [ ! -f "configs/filebrowser/filebrowser.db" ]; then
+    touch configs/filebrowser/filebrowser.db
+fi
+if [ ! -f "configs/filebrowser/settings.json" ]; then
+    # Create default settings with branding
+    cat > configs/filebrowser/settings.json <<EOF
+{
+  "branding": {
+    "name": "Rclone Media Server",
+    "disableExternal": true
+  }
+}
+EOF
+fi
+chown -R 1000:1000 configs/filebrowser
+
 # 6. Rclone Config Setup
 echo -e "\n${GREEN}[5/7] Setting up Rclone Config...${NC}"
 CONFIG_FILE="configs/rclone/rclone.conf"
@@ -343,7 +363,7 @@ fi
 
 # Service Selection Logic
 CORE_SERVICES="rclone"
-OPTIONAL_SERVICES=("homarr" "radarr" "prowlarr" "qbittorrent" "aria2" "ariang" "jellyseerr" "profilarr" "jellyfin" "jdownloader" "parfix")
+OPTIONAL_SERVICES=("homarr" "radarr" "prowlarr" "qbittorrent" "aria2" "ariang" "jellyseerr" "profilarr" "jellyfin" "jdownloader" "parfix" "filebrowser")
 
 echo -e "\n${BLUE}Installation Mode:${NC}"
 echo "1) Full Installation (Install Everything)"
@@ -521,10 +541,15 @@ echo -e "JDownloader 2      : http://$IP_ADDRESS:5800"
 echo -e "AriaNg (Aria2 UI)  : http://$IP_ADDRESS:6880"
 echo -e "Rclone WebUI       : http://$IP_ADDRESS:5572"
 echo -e "ParFix (Archive Tool): http://$IP_ADDRESS:5001"
+echo -e "File Browser       : http://$IP_ADDRESS:8081"
 echo -e "${BLUE}=================================================${NC}"
 echo -e "Login Credentials:"
 echo -e "qBittorrent : admin / adminadmin"
+echo -e "File Browser: admin / admin"
 echo -e "Rclone WebUI: $RCLONE_USER / $RCLONE_PASS"
+echo -e "-------------------------------------------------"
+echo -e "${YELLOW}Want faster downloads? Setup SFTP:${NC}"
+echo -e "Run: sudo ./scripts/create_sftp_user.sh"
 echo -e "-------------------------------------------------"
 echo -e "Generated Keys (Saved in .env):"
 echo -e "Homarr Encryption Key: $HOMARR_KEY"

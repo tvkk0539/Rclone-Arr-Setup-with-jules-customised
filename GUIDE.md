@@ -40,7 +40,7 @@ You need to allow specific ports so you can access the websites.
 4.  **Targets**: `All instances in the network`
 5.  **Source IPv4 ranges**: `0.0.0.0/0`
 6.  **Protocols and ports**: Select `TCP` and enter:
-    `7575,8080,6880,5572,7878,9696,5055,5060,8096`
+    `7575,8080,6880,5572,7878,9696,5055,5060,8096,8081`
 7.  Click **Create**.
 
 ---
@@ -621,6 +621,7 @@ Use this list to know which port does what, and copy the code below to open them
 | **Rclone WebUI** | `5572` | **Cloud Manager**. See your Google Drive files. |
 | **Profilarr** | `6868` | **Profile Manager**. Advanced settings. |
 | **ParFix** | `5001` | **Archive Utility**. Fix broken downloads. |
+| **File Browser** | `8081` | **File Manager**. Access/Upload/Download files remotely. |
 
 ### GCP Firewall Command
 When creating your Firewall Rule in Google Cloud Console:
@@ -629,7 +630,7 @@ When creating your Firewall Rule in Google Cloud Console:
 3.  **Source ranges**: `0.0.0.0/0`
 4.  **Protocols and ports**: Paste exactly this list:
     ```
-    7575,8096,5055,7878,8080,9696,6880,5572,6868,5001
+    7575,8096,5055,7878,8080,9696,6880,5572,6868,5001,8081
     ```
 
 ---
@@ -882,3 +883,25 @@ If you run `docker compose ps` and see `rclone-mount` has state **Restarting**, 
 2.  Find `RCLONE_REMOTE=gdrive`
 3.  Change it to the name inside the brackets: `RCLONE_REMOTE=gdrive2tb001`
 4.  Save and Restart: `docker compose up -d`
+
+---
+
+## 18. Using File Browser (Remote File Manager)
+
+We have included **File Browser**, a powerful tool that lets you manage your downloads from any device (Phone, PC, Tablet) using just your web browser.
+
+### What can it do?
+*   **Browse** your `/downloads` folder remotely.
+*   **Download** files from your server to your phone/PC.
+*   **Upload** files from your phone/PC to the server.
+*   **Rename, Move, Delete** files.
+*   **Unzip** archives directly on the server.
+
+### How to access:
+1.  Go to `http://<YOUR_VM_IP>:8081`.
+2.  **Default Username**: `admin`
+3.  **Default Password**: `admin`
+
+### Security Warning
+*   **Change your password immediately!** Go to **Settings** -> **Profile** -> **Change Password**.
+*   Since this tool gives full access to your files, a weak password is a security risk.

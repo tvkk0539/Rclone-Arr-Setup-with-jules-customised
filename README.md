@@ -14,6 +14,7 @@ A complete Docker-based media server stack featuring automated downloads, cloud 
 - **📡 qBittorrent + VueTorrent** - Modern torrent client with beautiful UI
 - **⚡ Aria2 + AriaNg** - High-speed download manager with web interface
 - **☁️ Rclone + WebUI** - Cloud storage integration with HTTP API
+- **📂 File Browser** - Web-based file manager to access downloads remotely
 - **🎯 Jellyseerr** - Request management for movies and TV shows
 - **🏠 Homarr** - Beautiful dashboard for all services
 - **📊 Profilarr** - Profile and quality management
@@ -102,6 +103,7 @@ RPC_SECRET=your-secret-key
 After starting, access your services at:
 
 - **Homarr Dashboard**: `http://localhost:7575`
+- **File Browser**: `http://localhost:8081`
 - **qBittorrent**: `http://localhost:8080`
 - **AriaNg**: `http://localhost:6880`
 - **Rclone WebUI**: `http://localhost:5572`
