@@ -32,6 +32,12 @@ log_message() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
 }
 
+# 1. Global Auto-Upload Switch Check
+if [ "$RCLONE_AUTO_UPLOAD" = "false" ]; then
+    log_message "Global Switch is OFF (RCLONE_AUTO_UPLOAD=false). Skipping upload."
+    exit 0
+fi
+
 log_message "----------------------------------------"
 log_message "Radarr event triggered: $EVENT_TYPE"
 log_message "Movie: $MOVIE_TITLE ($MOVIE_YEAR)"

@@ -83,6 +83,20 @@ RCLONE_USER=${INPUT_USER:-admin}
 read -p "Create a password for Rclone WebUI [password]: " INPUT_PASS
 RCLONE_PASS=${INPUT_PASS:-password}
 
+# Ask for Global Auto-Upload Setting
+echo -e "\n${YELLOW}Step 3c: Automation Settings${NC}"
+echo "Do you want to enable automatic Rclone uploads by default?"
+echo "If 'yes', completed downloads will be uploaded and deleted locally."
+echo "If 'no', files will stay on the local disk."
+read -p "Enable Auto-Upload? [y/n] (Default: y): " INPUT_UPLOAD
+if [[ "$INPUT_UPLOAD" =~ ^[Nn]$ ]]; then
+    RCLONE_AUTO_UPLOAD="false"
+    echo -e "${BLUE}Auto-Upload DISABLED.${NC}"
+else
+    RCLONE_AUTO_UPLOAD="true"
+    echo -e "${BLUE}Auto-Upload ENABLED.${NC}"
+fi
+
 # Generate/Ask for RPC Secret
 RANDOM_SECRET=$(openssl rand -hex 12)
 read -p "Enter RPC Secret for Aria2 (Press Enter to generate random): " INPUT_RPC
@@ -94,7 +108,7 @@ read -p "Enter Homarr Encryption Key (Press Enter to generate random): " INPUT_K
 HOMARR_KEY=${INPUT_KEY:-$RANDOM_KEY}
 
 # Ask for JDownloader 2 Mode
-echo -e "\n${YELLOW}Step 3c: JDownloader 2 Configuration${NC}"
+echo -e "\n${YELLOW}Step 3d: JDownloader 2 Configuration${NC}"
 echo "1) Standard Mode (VNC Web Interface + Optional MyJDownloader)"
 echo "2) Headless Mode (No Web/VNC, Saves RAM, REQUIRES MyJDownloader Account)"
 read -p "Select Mode [1/2] (Default: 1): " JD_MODE
@@ -128,6 +142,7 @@ DOWNLOADS_FOLDER="$USER_HOME/downloads"
 echo -e "\nSetting downloads folder to: ${BLUE}$DOWNLOADS_FOLDER${NC}"
 mkdir -p "$DOWNLOADS_FOLDER"
 chown -R "$CURRENT_USER:$CURRENT_USER" "$DOWNLOADS_FOLDER"
+chmod -R 777 "$DOWNLOADS_FOLDER"
 
 # Create .env file
 echo -e "\n${GREEN}Generating .env file...${NC}"
@@ -142,6 +157,7 @@ DOWNLOADS_FOLDER=$DOWNLOADS_FOLDER
 RCLONE_REMOTE=$RCLONE_REMOTE
 RCLONE_USER=$RCLONE_USER
 RCLONE_PASS=$RCLONE_PASS
+RCLONE_AUTO_UPLOAD=$RCLONE_AUTO_UPLOAD
 
 # Network
 DOCKER_NETWORK=nginx_network
@@ -181,25 +197,6 @@ if [ "$JD_HEADLESS" == "1" ]; then
   "debugenabled" : false,
   "maxdownloadspeed" : 0,
   "maxuploadspeed" : 0
-}
-EOF
-
-    # Disable premium server (optional)
-    cat > configs/jdownloader/cfg/org.jdownloader.extensions.jdpremserv.JDPremServSettings.json <<EOF
-{
-  "premiumhosterlist" : "",
-  "enabled" : false,
-  "autoconnect" : true
-}
-EOF
-
-    # Force headless mode in settings
-    cat > configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfaceSettings.json <<EOF
-{
-  "trayiconenabled": false,
-  "forcewindowstate": "normal",
-  "mainframevisible": false,
-  "silentmode": true
 }
 EOF
 
@@ -266,63 +263,26 @@ mkdir -p configs/jdownloader/cfg
 # 1. Create GUI Settings file (Prevents 'jq: error' during container init)
 if [ ! -f "configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfaceSettings.json" ]; then
     # We disable the tray icon to prevent the "Tray isn't supported" error on startup
+    # AND to prevent the container initialization script from crashing due to missing file.
     echo '{"trayiconenabled": false}' > configs/jdownloader/cfg/org.jdownloader.settings.GraphicalUserInterfaceSettings.json
 fi
 
-# 2. Set Default Download Path to /downloads
-echo '{"defaultdownloadfolder" : "/downloads"}' > configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json
-
-# 3. Enable "Subfolder by Package" (Packagizer Rule)
-# This requires a specific Packagizer rule to be injected.
-# We force-create the rule list with the "SubFolderByPackageRule" enabled.
-# This guarantees that every package gets its own folder named after the package.
-cat > configs/jdownloader/cfg/org.jdownloader.controlling.packagizer.PackagizerSettings.rulelist.json <<EOF
-[
-  {
-    "id": "SubFolderByPackageRule",
-    "enabled": true,
-    "name": "Create Subfolder by Packagename",
-    "matchAlwaysFilter": {
-      "enabled": true
-    },
-    "downloadDestination": "<jd:packagename>",
-    "iconKey": "folder",
-    "staticRule": true
-  }
-]
+# 2. Set Default Download Path & Performance Settings
+# We inject these to make JDownloader faster and more robust (like Aria2).
+# - defaultdownloadfolder: /downloads (Mount path)
+# - autoreconnectenabled: true (Retry on disconnect)
+# - maxchunksperfile: 8 (Higher speed, similar to Aria2 default)
+# - maxsimultaneousdownloads: 5 (Parallel processing)
+cat > configs/jdownloader/cfg/org.jdownloader.settings.GeneralSettings.json <<EOF
+{
+  "defaultdownloadfolder" : "/downloads",
+  "autoreconnectenabled" : true,
+  "maxchunksperfile" : 8,
+  "maxsimultaneousdownloads" : 5,
+  "downloadspeedlimit" : 0,
+  "pausespeed" : 0
+}
 EOF
-
-# 4. Disable "Various Package" Grouping (Linkgrabber Settings)
-# We set variouspackagelimit to 0 to prevent JDownloader from grouping single files into a "Various" package.
-# This ensures that even single files get their own package folder (named after the file).
-echo '{"variouspackagelimit" : 0}' > configs/jdownloader/cfg/org.jdownloader.settings.LinkgrabberSettings.json
-
-# 4. Inject Pre-Installed Extensions (Snapshot Deployment)
-# The user provided a zip of pre-installed extensions to bypass the manual "Install Now" step.
-EXTENSIONS_URL="https://github.com/tvkk0539/Rclone-Arr-Setup-with-jules-customised/releases/download/v1/jdownloader_extensions.zip"
-EXTENSIONS_DIR="configs/jdownloader/extensions"
-
-echo -e "${BLUE}Downloading JDownloader Extensions...${NC}"
-mkdir -p "$EXTENSIONS_DIR"
-
-if wget -qO /tmp/jd_extensions.zip "$EXTENSIONS_URL"; then
-    echo "Extracting extensions..."
-    # We use -j to flatten the directory structure and extract only .jar files
-    unzip -o -q -j /tmp/jd_extensions.zip "*.jar" -d "$EXTENSIONS_DIR"
-    rm /tmp/jd_extensions.zip
-    echo -e "${GREEN}Extensions pre-installed successfully.${NC}"
-
-    # 4. Pre-Enable Event Scripter
-    # Since we installed the JAR, we can safe-enable it immediately.
-    # This prevents the race condition where JDownloader starts, sees the new JAR, and defaults it to "Disabled".
-    JD_EXT_FILE="configs/jdownloader/cfg/org.jdownloader.extensions.eventscripter.EventScripterExtension.json"
-    if [ ! -f "$JD_EXT_FILE" ]; then
-        echo '{"freshinstall":false,"enabled":true}' > "$JD_EXT_FILE"
-        echo "Auto-enabled Event Scripter Extension."
-    fi
-else
-    echo -e "${YELLOW}Failed to download extensions. You may need to install them manually.${NC}"
-fi
 
 # Fix specific permissions for JDownloader (Container runs as user 1000)
 chown -R 1000:1000 configs/jdownloader
@@ -483,13 +443,12 @@ fi
 if docker compose ps --services --filter "status=running" | grep -q "jdownloader"; then
     echo -e "\n${BLUE}[Auto-Config] Checking JDownloader Automation...${NC}"
     JD_CONFIG_DIR="configs/jdownloader/cfg"
-    JD_CONFIG_FILE="$JD_CONFIG_DIR/org.jdownloader.settings.GraphicalUserInterfaceSettings.json"
     JD_SCRIPT_FILE="$JD_CONFIG_DIR/org.jdownloader.extensions.eventscripter.EventScripterExtension.scripts.json"
 
-    # Wait for JDownloader to initialize its config files (max 180 seconds)
+    # Wait for JDownloader to initialize its config directory (max 180 seconds)
     echo -n "Waiting for JDownloader to initialize..."
     for i in $(seq 1 36); do
-        if [ -f "$JD_CONFIG_FILE" ]; then
+        if [ -d "$JD_CONFIG_DIR" ]; then
             echo -e " ${GREEN}Done.${NC}"
 
             # Check if automation script needs injection
@@ -537,7 +496,7 @@ EOF
         sleep 5
     done
 
-    if [ ! -f "$JD_CONFIG_FILE" ]; then
+    if [ ! -d "$JD_CONFIG_DIR" ]; then
         echo -e "\n${YELLOW}JDownloader is taking too long to start.${NC}"
         echo "Automation skipped. You can run 'sudo ./scripts/init_jd.sh' later."
     fi

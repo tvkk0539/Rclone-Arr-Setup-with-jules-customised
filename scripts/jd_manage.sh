@@ -28,6 +28,12 @@ log_message() {
     echo "[$(date +%Y-%m-%d\ %H:%M:%S)] $1" >> "$LOG_FILE"
 }
 
+# 1. Global Auto-Upload Switch Check
+if [ "$RCLONE_AUTO_UPLOAD" = "false" ]; then
+    log_message "Global Switch is OFF (RCLONE_AUTO_UPLOAD=false). Skipping upload."
+    exit 0
+fi
+
 log_message "----------------------------------------"
 log_message "Processing Package: $PACKAGE_NAME"
 log_message "Download path: $DOWNLOAD_PATH"
